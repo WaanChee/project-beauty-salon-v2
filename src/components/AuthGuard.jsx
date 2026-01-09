@@ -22,6 +22,11 @@ export default function ProfilePage() {
     navigate("/login"); // Redirect to login
   };
 
+  // Don't render anything if no token (during redirect)
+  if (!authToken) {
+    return null;
+  }
+
   return (
     <Container fluid>
       <Row>
