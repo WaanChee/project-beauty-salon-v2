@@ -4,6 +4,7 @@ import Home from "./pages/Home";
 import AddBooking from "./pages/AddBooking";
 import AuthPage from "./pages/AuthPage";
 import AuthGuard from "./components/AuthGuard";
+import LoginSelector from "./pages/LoginSelector";
 
 function Layout() {
   return (
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="addBooking" element={<AddBooking />} />
           <Route path="login" element={<AuthPage />} />
           <Route path="adminPage" element={<AuthGuard />} />
+          <Route path="loginSelector" element={<LoginSelector />} />
         </Route>
       </Routes>
     </BrowserRouter>
