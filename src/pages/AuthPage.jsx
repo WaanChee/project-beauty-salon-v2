@@ -16,7 +16,7 @@ import pic2 from "../assets/images/beauty-salon-login-page-bg.png";
 export default function Login() {
   const loginImage = pic2;
   const API_URL =
-    "https://eb392aa9-9b22-4ac4-b3cc-7f8d369efa1e-00-3asbq4cs361u6.pike.replit.dev";
+    "https://bdf8b629-3ab0-47ff-9325-50227345e965-00-1zki6gacehg14.pike.replit.dev";
 
   // Possible values: null (no modal shows), "Login", "SignUp"
   const [modalShow, setModalShow] = useState(null);
