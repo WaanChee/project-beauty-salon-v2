@@ -14,9 +14,9 @@ export default function LoginSelector() {
     // Simulate a brief selection feedback before navigation
     setTimeout(() => {
       if (role === "admin") {
-        navigate("/admin/dashboard");
+        navigate("/login/admin");
       } else if (role === "user") {
-        navigate("/user/dashboard");
+        navigate("/customer/auth");
       }
     }, 700);
   };
