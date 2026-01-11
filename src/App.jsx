@@ -5,8 +5,23 @@ import AddBooking from "./pages/AddBooking";
 import AuthPage from "./pages/AuthPage";
 import AuthGuard from "./components/AuthGuard";
 import LoginSelector from "./pages/LoginSelector";
+import CustomerAuthPage from "./pages/CustomerAuthPage";
+import CustomerDashboard from "./pages/CustomerDashboard";
+import CustomerAuthGuard from "./components/CustomerAuthGuard";
+import useLocalStorage from "use-local-storage";
 
 function Layout() {
+  const [customerToken, setCustomerToken] = useLocalStorage(
+    "customerToken",
+    ""
+  );
+  const [customerUser] = useLocalStorage("customerUser", null);
+
+  // Handle customer logout
+  const handleCustomerLogout = () => {
+    setCustomerToken("");
+  };
+
   return (
     <>
       <Navbar bg="light" variant="light">
@@ -25,18 +40,42 @@ function Layout() {
                 Book a salon
               </Nav.Link>
               {/* add more left-side links here if needed */}
+
+              {/* SHOW "My Bookings" if customer is logged in */}
+              {customerToken && (
+                <Nav.Link as={Link} to="/customer/dashboard">
+                  My Bookings
+                </Nav.Link>
+              )}
             </Nav>
 
             {/* Right-side area: login button */}
-            <div className="d-flex">
-              <Button
-                as={Link}
-                to="/login"
-                variant="dark"
-                style={{ fontSize: "15px", minWidth: "80px" }}
-              >
-                Login
-              </Button>
+            <div className="d-flex gap-2">
+              {/* IF customer is logged in, show their name and logout */}
+              {customerToken ? (
+                <>
+                  <span className="navbar-text me-2">
+                    👋 {customerUser?.name}
+                  </span>
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    onClick={handleCustomerLogout}
+                  >
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  as={Link}
+                  to="/login"
+                  variant="dark"
+                  size="sm"
+                  style={{ fontSize: "16px", minWidth: "75px" }}
+                >
+                  Login
+                </Button>
+              )}
             </div>
           </Navbar.Collapse>
         </Container>
@@ -50,12 +89,30 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/*Login selector - choose customer or admin */}
+        <Route path="login" element={<LoginSelector />} />
+
+        {/* Admin auth page */}
+        <Route path="login/admin" element={<AuthPage />} />
+
+        {/* Customer auth page */}
+        <Route path="customer/auth" element={<CustomerAuthPage />} />
+
+        {/* Main layout */}
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="addBooking" element={<AddBooking />} />
-          <Route path="login" element={<AuthPage />} />
           <Route path="adminPage" element={<AuthGuard />} />
-          <Route path="loginSelector" element={<LoginSelector />} />
+
+          {/* Customer dashboard - PROTECTED */}
+          <Route
+            path="customer/dashboard"
+            element={
+              <CustomerAuthGuard>
+                <CustomerDashboard />
+              </CustomerAuthGuard>
+            }
+          />
         </Route>
       </Routes>
     </BrowserRouter>
