@@ -9,33 +9,53 @@ import {
 } from "react-bootstrap";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import useLocalStorage from "use-local-storage";
 import {
   createBooking,
   clearMessages,
 } from "../features/bookings/bookingSlice";
-import useLocalStorage from "use-local-storage";
 
 export default function AddBooking() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // Redux state
   const { loading, error, successMessage } = useSelector(
     (state) => state.bookings
   );
-  const [authToken] = useLocalStorage("authToken", "");
 
-  // Form data state with user information
+  // Get logged-in customer info from localStorage
+  const [customerToken] = useLocalStorage("customerToken", "");
+  const [customerUser] = useLocalStorage("customerUser", null);
+
+  // ============================================================================
+  // REDIRECT TO LOGIN IF NOT AUTHENTICATED
+  // ============================================================================
+  useEffect(() => {
+    if (!customerToken) {
+      navigate("/login"); // Redirect to login selector
+    }
+  }, [customerToken, navigate]);
+
+  // ============================================================================
+  // FORM STATE - Pre-filled with customer info
+  // ============================================================================
   const [formData, setFormData] = useState({
-    // User Information (Customer)
-    user_name: "",
-    user_email: "",
-    user_phone: "",
-    // Booking Details
+    // User Information (pre-filled from logged-in customer)
+    user_name: customerUser?.name || "",
+    user_email: customerUser?.email || "",
+    user_phone: customerUser?.phone_number || "",
+    // Booking Details (empty, user fills these)
     title: "",
     description: "",
     date: "",
     time: "",
   });
 
-  // Handle input changes
+  // ============================================================================
+  // HANDLE INPUT CHANGES
+  // ============================================================================
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -43,31 +63,32 @@ export default function AddBooking() {
     });
   };
 
-  // Handle form submission
+  // ============================================================================
+  // HANDLE FORM SUBMISSION
+  // ============================================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Create booking data (user info + booking details)
-    const bookingData = {
-      ...formData,
-    };
-
     // Dispatch the createBooking action
-    await dispatch(createBooking(bookingData));
+    const result = await dispatch(createBooking(formData));
 
-    // Clear form after successful submission
-    setFormData({
-      user_name: "",
-      user_email: "",
-      user_phone: "",
-      title: "",
-      description: "",
-      date: "",
-      time: "",
-    });
+    // Only clear booking fields if successful, keep user info
+    if (createBooking.fulfilled.match(result)) {
+      setFormData({
+        user_name: customerUser?.name || "",
+        user_email: customerUser?.email || "",
+        user_phone: customerUser?.phone_number || "",
+        title: "", // Clear service
+        description: "", // Clear description
+        date: "", // Clear date
+        time: "", // Clear time
+      });
+    }
   };
 
-  // Clear messages after 5 seconds
+  // ============================================================================
+  // AUTO-CLEAR MESSAGES AFTER 5 SECONDS
+  // ============================================================================
   useEffect(() => {
     if (error || successMessage) {
       const timer = setTimeout(() => {
@@ -77,6 +98,9 @@ export default function AddBooking() {
     }
   }, [error, successMessage, dispatch]);
 
+  // ============================================================================
+  // RENDER
+  // ============================================================================
   return (
     <Container className="mt-5">
       <Row className="justify-content-center">
@@ -106,7 +130,9 @@ export default function AddBooking() {
           )}
 
           <Form onSubmit={handleSubmit}>
-            {/* Customer Information Section */}
+            {/* ================================================================ */}
+            {/* CUSTOMER INFORMATION SECTION - Pre-filled and Read-only */}
+            {/* ================================================================ */}
             <Card className="mb-4">
               <Card.Header>
                 <h5 className="mb-0">Your Information</h5>
@@ -117,11 +143,16 @@ export default function AddBooking() {
                   <Form.Control
                     type="text"
                     name="user_name"
-                    placeholder="John Doe"
                     value={formData.user_name}
                     onChange={handleChange}
                     required
+                    readOnly
+                    disabled
+                    style={{ backgroundColor: "#f8f9fa" }}
                   />
+                  <Form.Text className="text-muted">
+                    This is your registered name
+                  </Form.Text>
                 </Form.Group>
 
                 <Form.Group className="mb-3">
@@ -129,13 +160,15 @@ export default function AddBooking() {
                   <Form.Control
                     type="email"
                     name="user_email"
-                    placeholder="john.doe@example.com"
                     value={formData.user_email}
                     onChange={handleChange}
                     required
+                    readOnly
+                    disabled
+                    style={{ backgroundColor: "#f8f9fa" }}
                   />
                   <Form.Text className="text-muted">
-                    We'll use this to send booking confirmations
+                    Logged in as {customerUser?.email}
                   </Form.Text>
                 </Form.Group>
 
@@ -149,11 +182,16 @@ export default function AddBooking() {
                     onChange={handleChange}
                     required
                   />
+                  <Form.Text className="text-muted">
+                    Update your phone number if needed
+                  </Form.Text>
                 </Form.Group>
               </Card.Body>
             </Card>
 
-            {/* Booking Details Section */}
+            {/* ================================================================ */}
+            {/* BOOKING DETAILS SECTION - User fills these */}
+            {/* ================================================================ */}
             <Card className="mb-4">
               <Card.Header>
                 <h5 className="mb-0">Booking Details</h5>
@@ -193,7 +231,7 @@ export default function AddBooking() {
                         value={formData.date}
                         onChange={handleChange}
                         required
-                        min={new Date().toISOString().split("T")[0]} // Prevent past dates
+                        min={new Date().toISOString().split("T")[0]}
                       />
                     </Form.Group>
                   </Col>
@@ -213,7 +251,9 @@ export default function AddBooking() {
               </Card.Body>
             </Card>
 
-            {/* Submit Button */}
+            {/* ================================================================ */}
+            {/* SUBMIT BUTTON */}
+            {/* ================================================================ */}
             <Button
               variant="primary"
               type="submit"
@@ -225,13 +265,13 @@ export default function AddBooking() {
             </Button>
           </Form>
 
-          {!authToken && (
-            <Alert variant="info" className="mt-3">
-              💡 <strong>No account needed!</strong> Just fill in your details
-              and book. Your information will be saved for faster bookings next
-              time!
-            </Alert>
-          )}
+          {/* Info Alert */}
+          <Alert variant="info" className="mt-3">
+            <i className="bi bi-info-circle me-2"></i>
+            <strong>Quick Tip:</strong> Your booking will be confirmed within 24
+            hours. You can view and manage all your bookings in the "My
+            Bookings" page.
+          </Alert>
         </Col>
       </Row>
     </Container>
