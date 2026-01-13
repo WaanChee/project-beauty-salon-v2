@@ -7,6 +7,8 @@ import {
   Badge,
   Alert,
   Spinner,
+  Row,
+  Col,
 } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import {
@@ -16,7 +18,7 @@ import {
 } from "../features/bookings/bookingSlice";
 import EditBookingModal from "../components/EditBookingModal";
 
-export default function AdminPage() {
+export default function AdminPage({ handleLogout }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { bookings, loading, error, successMessage } = useSelector(
@@ -70,12 +72,22 @@ export default function AdminPage() {
 
   return (
     <Container className="mt-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1>Admin - Manage Bookings</h1>
-        <Button variant="primary" onClick={() => navigate("/addBooking")}>
-          + Create New Booking
-        </Button>
-      </div>
+      <Row className="mb-4">
+        <Col>
+          <div className="d-flex justify-content-between align-items-center">
+            <h1>Admin - Manage Bookings</h1>
+            <div className="d-flex gap-2">
+              <Button variant="primary" onClick={() => navigate("/addBooking")}>
+                + Create New Booking
+              </Button>
+              <Button variant="outline-secondary" onClick={handleLogout}>
+                <i className="bi bi-box-arrow-right me-2"></i>
+                Logout
+              </Button>
+            </div>
+          </div>
+        </Col>
+      </Row>
 
       {/* Success Message */}
       {successMessage && (
