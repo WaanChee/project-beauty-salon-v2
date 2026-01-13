@@ -12,6 +12,8 @@ import {
 } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import useLocalStorage from "use-local-storage";
+import { signOut } from "firebase/auth";
+import { auth } from "../config/firebase";
 import {
   fetchCustomerBookings,
   cancelBooking,
@@ -27,21 +29,46 @@ export default function CustomerDashboard() {
     (state) => state.customer
   );
 
-  // Get customer info from localStorage (not Redux)
-  const [customerUser] = useLocalStorage("customerUser", null);
-  const [customerToken, setCustomerToken] = useLocalStorage(
-    "customerToken",
-    ""
-  );
+  // Get customer info from localStorage (linked to Firebase)
+  const [customerUser, setCustomerUser] = useLocalStorage("customerUser", null);
 
   // ============================================================================
   // FETCH BOOKINGS ON MOUNT
   // ============================================================================
   useEffect(() => {
+    // Check if customerUser exists and has id
     if (customerUser?.id) {
       dispatch(fetchCustomerBookings(customerUser.id));
+    } else if (customerUser?.uid) {
+      // If we only have Firebase UID, fetch the profile first
+      fetchUserProfile();
     }
   }, [dispatch, customerUser]);
+
+  // Fetch user profile from database using Firebase UID
+  const fetchUserProfile = async () => {
+    try {
+      const API_URL =
+        "https://86605879-7581-472d-a2f1-a4d71a358503-00-1nvtq3qgvln7.pike.replit.dev";
+      const response = await fetch(
+        `${API_URL}/customer/profile/${customerUser.uid}`
+      );
+      const data = await response.json();
+
+      // Update localStorage with complete user data
+      setCustomerUser({
+        ...customerUser,
+        id: data.id,
+        name: data.name,
+        phone_number: data.phone_number,
+      });
+
+      // Now fetch bookings with the database ID
+      dispatch(fetchCustomerBookings(data.id));
+    } catch (error) {
+      console.error("Failed to fetch user profile:", error);
+    }
+  };
 
   // ============================================================================
   // CLEAR MESSAGES AFTER 5 SECONDS
@@ -63,22 +90,38 @@ export default function CustomerDashboard() {
       dispatch(
         cancelBooking({
           bookingId,
-          userId: customerUser.id,
+          userId: customerUser.id, // Using database ID for bookings
         })
       );
     }
   };
 
   // ============================================================================
-  // HANDLE LOGOUT (Direct - No Redux)
+  // HANDLE LOGOUT WITH FIREBASE
   // ============================================================================
-  const handleLogout = () => {
-    // Clear localStorage
-    setCustomerToken("");
-    localStorage.removeItem("customerUser");
+  const handleLogout = async () => {
+    try {
+      console.log("🚪 Logging out...");
 
-    // Navigate to login
-    navigate("/login");
+      // Sign out from Firebase
+      await signOut(auth);
+
+      // Clear localStorage
+      setCustomerUser(null);
+      localStorage.removeItem("customerUser");
+
+      console.log("✅ Logout successful");
+
+      // Navigate to login selector
+      navigate("/login");
+    } catch (error) {
+      console.error("❌ Logout error:", error);
+
+      // Even if Firebase signOut fails, clear local data
+      setCustomerUser(null);
+      localStorage.removeItem("customerUser");
+      navigate("/login");
+    }
   };
 
   // ============================================================================
@@ -118,6 +161,7 @@ export default function CustomerDashboard() {
             <div>
               <h1>My Bookings</h1>
               <p className="text-muted">
+                {/* Display name from customerUser */}
                 Welcome back, {customerUser?.name || "Guest"}!
               </p>
             </div>
@@ -125,7 +169,9 @@ export default function CustomerDashboard() {
               <Button variant="primary" onClick={() => navigate("/addBooking")}>
                 + New Booking
               </Button>
+              {/* Now calls Firebase logout */}
               <Button variant="outline-secondary" onClick={handleLogout}>
+                <i className="bi bi-box-arrow-right me-2"></i>
                 Logout
               </Button>
             </div>
@@ -142,6 +188,7 @@ export default function CustomerDashboard() {
           dismissible
           onClose={() => dispatch(clearCustomerMessages())}
         >
+          <i className="bi bi-check-circle-fill me-2"></i>
           {successMessage}
         </Alert>
       )}
@@ -152,6 +199,7 @@ export default function CustomerDashboard() {
           dismissible
           onClose={() => dispatch(clearCustomerMessages())}
         >
+          <i className="bi bi-exclamation-triangle-fill me-2"></i>
           {error}
         </Alert>
       )}
@@ -161,9 +209,10 @@ export default function CustomerDashboard() {
       {/* ====================================================================== */}
       {loading && (
         <div className="text-center my-5">
-          <Spinner animation="border" role="status">
+          <Spinner animation="border" role="status" variant="primary">
             <span className="visually-hidden">Loading...</span>
           </Spinner>
+          <p className="mt-3 text-muted">Loading your bookings...</p>
         </div>
       )}
 
@@ -171,13 +220,19 @@ export default function CustomerDashboard() {
       {/* NO BOOKINGS */}
       {/* ====================================================================== */}
       {!loading && bookings.length === 0 && (
-        <Alert variant="info">
-          <h5>No bookings yet</h5>
-          <p>
+        <Alert variant="info" className="text-center py-5">
+          <i className="bi bi-calendar-x" style={{ fontSize: "3rem" }}></i>
+          <h5 className="mt-3">No bookings yet</h5>
+          <p className="mb-4">
             You haven't made any bookings. Click "New Booking" to schedule your
             first appointment!
           </p>
-          <Button variant="primary" onClick={() => navigate("/addBooking")}>
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={() => navigate("/addBooking")}
+          >
+            <i className="bi bi-plus-circle me-2"></i>
             Make Your First Booking
           </Button>
         </Alert>
@@ -188,14 +243,33 @@ export default function CustomerDashboard() {
       {/* ====================================================================== */}
       {!loading && bookings.length > 0 && (
         <>
-          <p className="mb-3">
-            <strong>Total Bookings: {bookings.length}</strong>
-          </p>
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <p className="mb-0">
+              <strong>Total Bookings: {bookings.length}</strong>
+            </p>
+            {/* Filter info */}
+            <small className="text-muted">Showing all your bookings</small>
+          </div>
 
           <Row>
             {bookings.map((booking) => (
               <Col key={booking.id} md={6} lg={4} className="mb-4">
-                <Card className="h-100 shadow-sm">
+                <Card className="h-100 shadow-sm border-0">
+                  {/* Card top accent based on status */}
+                  <div
+                    style={{
+                      height: "4px",
+                      background:
+                        booking.status === "Confirmed"
+                          ? "linear-gradient(90deg, #28a745, #20c997)"
+                          : booking.status === "Cancelled"
+                          ? "linear-gradient(90deg, #dc3545, #fd7e14)"
+                          : booking.status === "Completed"
+                          ? "linear-gradient(90deg, #17a2b8, #007bff)"
+                          : "linear-gradient(90deg, #ffc107, #fd7e14)",
+                    }}
+                  ></div>
+
                   <Card.Body>
                     <div className="d-flex justify-content-between align-items-start mb-3">
                       <h5 className="mb-0">{booking.title}</h5>
@@ -206,23 +280,31 @@ export default function CustomerDashboard() {
 
                     {booking.description && (
                       <p className="text-muted small mb-3">
+                        <i className="bi bi-chat-left-text me-2"></i>
                         {booking.description}
                       </p>
                     )}
 
                     <div className="mt-3">
                       <p className="mb-2">
-                        <i className="bi bi-calendar-event me-2"></i>
+                        <i className="bi bi-calendar-event me-2 text-primary"></i>
                         <strong>Date:</strong> {booking.date}
                       </p>
                       <p className="mb-2">
-                        <i className="bi bi-clock me-2"></i>
+                        <i className="bi bi-clock me-2 text-primary"></i>
                         <strong>Time:</strong> {booking.time}
                       </p>
                       <p className="mb-0 text-muted small">
                         <i className="bi bi-info-circle me-2"></i>
                         Booked on:{" "}
-                        {new Date(booking.created_at).toLocaleDateString()}
+                        {new Date(booking.created_at).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          }
+                        )}
                       </p>
                     </div>
                   </Card.Body>
@@ -240,11 +322,21 @@ export default function CustomerDashboard() {
                         Cancel Booking
                       </Button>
                     ) : (
-                      <p className="text-muted text-center mb-0 small">
-                        {booking.status === "Cancelled"
-                          ? "This booking was cancelled"
-                          : "This booking is completed"}
-                      </p>
+                      <div className="text-center py-2">
+                        <small className="text-muted">
+                          {booking.status === "Cancelled" ? (
+                            <>
+                              <i className="bi bi-x-circle text-danger me-2"></i>
+                              This booking was cancelled
+                            </>
+                          ) : (
+                            <>
+                              <i className="bi bi-check-circle text-info me-2"></i>
+                              This booking is completed
+                            </>
+                          )}
+                        </small>
+                      </div>
                     )}
                   </Card.Footer>
                 </Card>
