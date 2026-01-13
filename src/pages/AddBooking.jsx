@@ -10,7 +10,6 @@ import {
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import useLocalStorage from "use-local-storage";
 import {
   createBooking,
   clearMessages,
@@ -25,33 +24,65 @@ export default function AddBooking() {
     (state) => state.bookings
   );
 
-  // Get logged-in customer info from localStorage
-  const [customerToken] = useLocalStorage("customerToken", "");
-  const [customerUser] = useLocalStorage("customerUser", null);
+  // ============================================================================
+  // AUTH STATE - Use direct localStorage instead of hook
+  // ============================================================================
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [customerUser, setCustomerUser] = useState(null);
 
-  // ============================================================================
-  // REDIRECT TO LOGIN IF NOT AUTHENTICATED
-  // ============================================================================
+  // Check authentication on mount
   useEffect(() => {
-    if (!customerToken) {
-      navigate("/login"); // Redirect to login selector
+    const token = localStorage.getItem("customerToken");
+    const userJson = localStorage.getItem("customerUser");
+
+    console.log("🔵 AddBooking Auth Check:", {
+      hasToken: !!token,
+      hasUser: !!userJson,
+    });
+
+    if (!token || !userJson) {
+      console.log("❌ Not authenticated, redirecting to login...");
+      navigate("/login", { replace: true });
+      return;
     }
-  }, [customerToken, navigate]);
+
+    try {
+      const user = JSON.parse(userJson);
+      setCustomerUser(user);
+      setIsAuthenticated(true);
+      console.log("✅ User authenticated:", user.email);
+    } catch (error) {
+      console.error("❌ Failed to parse user data:", error);
+      navigate("/login", { replace: true });
+    }
+  }, [navigate]);
 
   // ============================================================================
   // FORM STATE - Pre-filled with customer info
   // ============================================================================
   const [formData, setFormData] = useState({
     // User Information (pre-filled from logged-in customer)
-    user_name: customerUser?.name || "",
-    user_email: customerUser?.email || "",
-    user_phone: customerUser?.phone_number || "",
+    user_name: "",
+    user_email: "",
+    user_phone: "",
     // Booking Details (empty, user fills these)
     title: "",
     description: "",
     date: "",
     time: "",
   });
+
+  // Pre-fill form when customerUser is loaded
+  useEffect(() => {
+    if (customerUser) {
+      setFormData((prev) => ({
+        ...prev,
+        user_name: customerUser.name || "",
+        user_email: customerUser.email || "",
+        user_phone: customerUser.phone_number || "",
+      }));
+    }
+  }, [customerUser]);
 
   // ============================================================================
   // HANDLE INPUT CHANGES
@@ -97,6 +128,11 @@ export default function AddBooking() {
       return () => clearTimeout(timer);
     }
   }, [error, successMessage, dispatch]);
+
+  // Don't render form until authenticated
+  if (!isAuthenticated || !customerUser) {
+    return null;
+  }
 
   // ============================================================================
   // RENDER
