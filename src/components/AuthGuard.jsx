@@ -1,38 +1,55 @@
 import { useEffect } from "react";
-import { Container, Row, Col } from "react-bootstrap";
+import { Container } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import useLocalStorage from "use-local-storage";
-import AdminSideBar from "./AdminSideBar";
+import { signOut } from "firebase/auth";
+import { auth } from "../config/firebase";
 import AdminPage from "../pages/AdminPage";
 
 export default function ProfilePage() {
-  const [authToken, setAuthToken] = useLocalStorage("authToken", "");
+  const [adminUser, setAdminUser] = useLocalStorage("adminUser", null);
   const navigate = useNavigate();
 
-  // Check for authToken immediately upon component mount and whenever authToken changes
-  // Redirect to login if no token
+  // Check for adminUser immediately upon component mount and whenever adminUser changes
+  // Redirect to login if no admin user
   useEffect(() => {
-    if (!authToken) {
+    if (!adminUser) {
       navigate("/login");
     }
-  }, [authToken, navigate]);
+  }, [adminUser, navigate]);
 
-  const handleLogout = () => {
-    setAuthToken(""); // Clear the token
-    navigate("/login"); // Redirect to login
+  const handleLogout = async () => {
+    try {
+      // Sign out from Firebase first
+      await signOut(auth);
+
+      // Clear localStorage
+      localStorage.removeItem("adminUser");
+
+      // Clear state
+      setAdminUser(null);
+
+      console.log("✅ Admin logout successful");
+
+      // Navigate to login
+      navigate("/login");
+    } catch (error) {
+      console.error("❌ Logout error:", error);
+      // Force clear even if Firebase signOut fails
+      localStorage.removeItem("adminUser");
+      setAdminUser(null);
+      navigate("/login");
+    }
   };
 
-  // Don't render anything if no token (during redirect)
-  if (!authToken) {
+  // Don't render anything if no admin user (during redirect)
+  if (!adminUser) {
     return null;
   }
 
   return (
     <Container fluid>
-      <Row>
-        <AdminSideBar handleLogout={handleLogout} />
-        <AdminPage />
-      </Row>
+      <AdminPage handleLogout={handleLogout} />
     </Container>
   );
 }
