@@ -9,17 +9,38 @@ import CustomerAuthPage from "./pages/CustomerAuthPage";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import CustomerAuthGuard from "./components/CustomerAuthGuard";
 import useLocalStorage from "use-local-storage";
+import { signOut } from "firebase/auth";
 
 function Layout() {
   const [customerToken, setCustomerToken] = useLocalStorage(
     "customerToken",
     ""
   );
-  const [customerUser] = useLocalStorage("customerUser", null);
+  const [customerUser, setCustomerUser] = useLocalStorage("customerUser", null);
 
   // Handle customer logout
-  const handleCustomerLogout = () => {
-    setCustomerToken("");
+  const handleCustomerLogout = async () => {
+    try {
+      // Sign out from Firebase
+      await signOut(auth);
+
+      // Clear localStorage directly
+      localStorage.removeItem("customerToken");
+      localStorage.removeItem("customerUser");
+
+      // Clear state
+      setCustomerToken("");
+      setCustomerUser(null);
+
+      console.log("✅ Logged out successfully");
+    } catch (error) {
+      console.error("❌ Logout error:", error);
+      // Force clear even if Firebase signOut fails
+      localStorage.removeItem("customerToken");
+      localStorage.removeItem("customerUser");
+      setCustomerToken("");
+      setCustomerUser(null);
+    }
   };
 
   return (
