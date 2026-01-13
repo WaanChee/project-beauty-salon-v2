@@ -11,31 +11,38 @@ import {
   InputGroup,
 } from "react-bootstrap";
 import { useState, useEffect } from "react";
-import axios from "axios";
-import useLocalStorage from "use-local-storage";
 import { useNavigate } from "react-router-dom";
+import useLocalStorage from "use-local-storage";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+} from "firebase/auth";
+import { auth } from "../config/firebase";
+import axios from "axios";
 import pic2 from "../assets/images/beauty-salon-login-page-bg.png";
 
 export default function AuthPage() {
   const navigate = useNavigate();
 
   // ============================================================================
-  // API URL - Update this to match your backend
+  // API URL
   // ============================================================================
   const API_URL =
-    "https://bdf8b629-3ab0-47ff-9325-50227345e965-00-1zki6gacehg14.pike.replit.dev";
+    "https://86605879-7581-472d-a2f1-a4d71a358503-00-1nvtq3qgvln7.pike.replit.dev";
 
   // ============================================================================
   // STATE
   // ============================================================================
-  const [authToken, setAuthToken] = useLocalStorage("authToken", "");
+  const [adminUser, setAdminUser] = useLocalStorage("adminUser", null);
 
   // Modal state
   const [modalShow, setModalShow] = useState(null);
 
   // Form data
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
 
   // UI state
   const [loading, setLoading] = useState(false);
@@ -45,16 +52,35 @@ export default function AuthPage() {
   const [fieldErrors, setFieldErrors] = useState({});
 
   // ============================================================================
-  // REDIRECT IF ALREADY LOGGED IN
+  // CHECK IF ADMIN IS ALREADY LOGGED IN
   // ============================================================================
   useEffect(() => {
-    if (authToken) {
-      navigate("/adminPage");
-    }
-  }, [authToken, navigate]);
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        // Check if user is admin
+        try {
+          const response = await axios.get(
+            `${API_URL}/admin/verify/${user.uid}`
+          );
+          if (response.data.isAdmin) {
+            setAdminUser({
+              uid: user.uid,
+              email: user.email,
+              username: response.data.username,
+            });
+            navigate("/adminPage");
+          }
+        } catch (error) {
+          console.error("Admin verification failed:", error);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate, setAdminUser, API_URL]);
 
   // ============================================================================
-  // CLEAR MESSAGES AFTER 5 SECONDS
+  // CLEAR MESSAGES
   // ============================================================================
   useEffect(() => {
     if (error || successMessage) {
@@ -72,14 +98,22 @@ export default function AuthPage() {
   const validateForm = () => {
     const errors = {};
 
-    if (!username.trim()) {
-      errors.username = "Username is required";
+    if (modalShow === "SignUp") {
+      if (!username.trim()) {
+        errors.username = "Username is required";
+      } else if (username.trim().length < 3) {
+        errors.username = "Username must be at least 3 characters";
+      }
+    }
+
+    if (!email.trim()) {
+      errors.email = "Email is required";
     }
 
     if (!password) {
       errors.password = "Password is required";
-    } else if (modalShow === "SignUp" && password.length < 8) {
-      errors.password = "Password must be at least 8 characters";
+    } else if (modalShow === "SignUp" && password.length < 12) {
+      errors.password = "Password must be at least 12 characters";
     }
 
     setFieldErrors(errors);
@@ -87,7 +121,7 @@ export default function AuthPage() {
   };
 
   // ============================================================================
-  // HANDLE SIGNUP
+  // HANDLE SIGNUP (Admin)
   // ============================================================================
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -104,16 +138,35 @@ export default function AuthPage() {
     try {
       console.log("📝 Creating admin account...");
 
-      const response = await axios.post(`${API_URL}/signup`, {
-        username: username.trim(),
-        password,
-      });
+      // Create Firebase user
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email.trim().toLowerCase(),
+        password
+      );
 
-      console.log("✅ Signup successful:", response.data);
+      const user = userCredential.user;
+      console.log("✅ Firebase admin user created:", user.uid);
+
+      // Create admin profile in database
+      try {
+        await axios.post(`${API_URL}/admin/create-profile`, {
+          uid: user.uid,
+          username: username.trim(),
+          email: email.trim().toLowerCase(),
+        });
+        console.log("✅ Admin profile created");
+      } catch (dbError) {
+        console.error("Database error:", dbError);
+        setError("Account created but profile setup failed. Contact support.");
+        setLoading(false);
+        return;
+      }
 
       setSuccessMessage("🎉 Admin account created! Please sign in.");
-      setUsername("");
+      setEmail("");
       setPassword("");
+      setUsername("");
 
       setTimeout(() => {
         setModalShow("Login");
@@ -122,15 +175,20 @@ export default function AuthPage() {
     } catch (error) {
       console.error("❌ Signup error:", error);
 
-      let errorMessage = "Signup failed. Please try again.";
+      let errorMessage = "Signup failed.";
 
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.response?.status === 400) {
-        errorMessage = "Username already exists or invalid input.";
-      } else if (!error.response) {
-        errorMessage =
-          "Cannot connect to server. Please check your connection.";
+      switch (error.code) {
+        case "auth/email-already-in-use":
+          errorMessage = "This email is already registered.";
+          break;
+        case "auth/invalid-email":
+          errorMessage = "Invalid email address.";
+          break;
+        case "auth/weak-password":
+          errorMessage = "Password is too weak. Use at least 12 characters.";
+          break;
+        default:
+          errorMessage = error.message;
       }
 
       setError(errorMessage);
@@ -140,7 +198,7 @@ export default function AuthPage() {
   };
 
   // ============================================================================
-  // HANDLE LOGIN
+  // HANDLE LOGIN (Admin)
   // ============================================================================
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -155,38 +213,84 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      console.log("🔐 Admin login attempt...");
+      console.log("🔐 Admin login...");
 
-      const response = await axios.post(`${API_URL}/login`, {
-        username: username.trim(),
-        password,
-      });
+      // Sign in with Firebase
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email.trim().toLowerCase(),
+        password
+      );
 
-      console.log("✅ Login successful:", response.data);
+      const user = userCredential.user;
+      console.log("✅ Login successful:", user.uid);
 
-      if (response.data?.auth && response.data?.token) {
-        setAuthToken(response.data.token);
+      // Verify admin status
+      try {
+        const response = await axios.get(`${API_URL}/admin/verify/${user.uid}`);
+
+        if (!response.data.isAdmin) {
+          setError("This account doesn't have admin privileges.");
+          await auth.signOut();
+          setLoading(false);
+          return;
+        }
+
+        setAdminUser({
+          uid: user.uid,
+          email: user.email,
+          username: response.data.username,
+        });
+
         setSuccessMessage("✅ Welcome back, Admin!");
 
         setTimeout(() => {
           navigate("/adminPage");
         }, 1000);
+      } catch (verifyError) {
+        console.error("Verification error:", verifyError);
+        setError("Could not verify admin status.");
       }
     } catch (error) {
       console.error("❌ Login error:", error);
 
-      let errorMessage = "Login failed. Please try again.";
+      let errorMessage = "Login failed.";
 
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.response?.status === 400) {
-        errorMessage = "Invalid username or password.";
-      } else if (!error.response) {
-        errorMessage =
-          "Cannot connect to server. Please check your connection.";
+      switch (error.code) {
+        case "auth/invalid-credential":
+        case "auth/user-not-found":
+        case "auth/wrong-password":
+          errorMessage = "Invalid credentials.";
+          break;
+        case "auth/too-many-requests":
+          errorMessage = "Too many attempts. Try again later.";
+          break;
+        default:
+          errorMessage = error.message;
       }
 
       setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ============================================================================
+  // HANDLE PASSWORD RESET
+  // ============================================================================
+  const handlePasswordReset = async () => {
+    if (!email.trim()) {
+      setError("Please enter your email first.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await sendPasswordResetEmail(auth, email.trim().toLowerCase());
+      setSuccessMessage("✅ Password reset email sent!");
+    } catch (error) {
+      setError(error.message);
     } finally {
       setLoading(false);
     }
@@ -200,8 +304,9 @@ export default function AuthPage() {
     setError(null);
     setSuccessMessage(null);
     setFieldErrors({});
-    setUsername("");
+    setEmail("");
     setPassword("");
+    setUsername("");
   };
 
   // ============================================================================
@@ -236,15 +341,14 @@ export default function AuthPage() {
             Manage bookings and system settings
           </p>
 
-          {/* Error Message */}
+          {/* Messages */}
           {error && (
             <Alert variant="danger" dismissible onClose={() => setError(null)}>
               <i className="bi bi-exclamation-triangle-fill me-2"></i>
-              <strong>Error:</strong> {error}
+              {error}
             </Alert>
           )}
 
-          {/* Success Message */}
           {successMessage && (
             <Alert
               variant="success"
@@ -287,9 +391,7 @@ export default function AuthPage() {
         </Col>
       </Row>
 
-      {/* ====================================================================== */}
       {/* AUTH MODAL */}
-      {/* ====================================================================== */}
       <Modal
         show={modalShow !== null}
         onHide={handleClose}
@@ -304,15 +406,12 @@ export default function AuthPage() {
         </Modal.Header>
 
         <Modal.Body className="p-4">
-          {/* Error in modal */}
           {error && (
             <Alert variant="danger" className="mb-3">
-              <i className="bi bi-exclamation-triangle-fill me-2"></i>
               {error}
             </Alert>
           )}
 
-          {/* Success in modal */}
           {successMessage && (
             <Alert variant="success" className="mb-3">
               {successMessage}
@@ -320,45 +419,52 @@ export default function AuthPage() {
           )}
 
           <Form onSubmit={modalShow === "SignUp" ? handleSignup : handleLogin}>
-            {/* USERNAME */}
+            {/* Username (Signup only) */}
+            {modalShow === "SignUp" && (
+              <Form.Group className="mb-3">
+                <Form.Label>Username *</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter admin username"
+                  isInvalid={!!fieldErrors.username}
+                  disabled={loading}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {fieldErrors.username}
+                </Form.Control.Feedback>
+              </Form.Group>
+            )}
+
+            {/* Email */}
             <Form.Group className="mb-3">
-              <Form.Label>Username *</Form.Label>
+              <Form.Label>Email *</Form.Label>
               <Form.Control
-                type="text"
-                value={username}
-                onChange={(e) => {
-                  setUsername(e.target.value);
-                  if (fieldErrors.username) {
-                    setFieldErrors({ ...fieldErrors, username: null });
-                  }
-                }}
-                placeholder="Enter admin username"
-                isInvalid={!!fieldErrors.username}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@example.com"
+                isInvalid={!!fieldErrors.email}
                 disabled={loading}
-                autoFocus
               />
               <Form.Control.Feedback type="invalid">
-                {fieldErrors.username}
+                {fieldErrors.email}
               </Form.Control.Feedback>
             </Form.Group>
 
-            {/* PASSWORD */}
+            {/* Password */}
             <Form.Group className="mb-3">
               <Form.Label>Password *</Form.Label>
               <InputGroup>
                 <Form.Control
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (fieldErrors.password) {
-                      setFieldErrors({ ...fieldErrors, password: null });
-                    }
-                  }}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder={
                     modalShow === "SignUp"
-                      ? "Create password (min 8 characters)"
-                      : "Enter your password"
+                      ? "Min 12 characters"
+                      : "Enter password"
                   }
                   isInvalid={!!fieldErrors.password}
                   disabled={loading}
@@ -374,14 +480,22 @@ export default function AuthPage() {
                   {fieldErrors.password}
                 </Form.Control.Feedback>
               </InputGroup>
-              {modalShow === "SignUp" && (
-                <Form.Text className="text-muted">
-                  Password must be at least 8 characters long
-                </Form.Text>
+
+              {modalShow === "Login" && (
+                <div className="mt-2">
+                  <Button
+                    variant="link"
+                    className="p-0 small"
+                    onClick={handlePasswordReset}
+                    disabled={loading}
+                  >
+                    Forgot password?
+                  </Button>
+                </div>
               )}
             </Form.Group>
 
-            {/* SUBMIT BUTTON */}
+            {/* Submit */}
             <Button
               className="w-100 mt-3"
               type="submit"
@@ -390,58 +504,41 @@ export default function AuthPage() {
             >
               {loading ? (
                 <>
-                  <Spinner
-                    as="span"
-                    animation="border"
-                    size="sm"
-                    className="me-2"
-                  />
-                  {modalShow === "SignUp"
-                    ? "Creating Account..."
-                    : "Signing In..."}
+                  <Spinner size="sm" className="me-2" />
+                  {modalShow === "SignUp" ? "Creating..." : "Signing In..."}
                 </>
               ) : (
-                <>
-                  {modalShow === "SignUp" ? "Create Admin Account" : "Sign In"}
-                </>
+                <>{modalShow === "SignUp" ? "Create Account" : "Sign In"}</>
               )}
             </Button>
           </Form>
 
-          {/* SWITCH BETWEEN LOGIN/SIGNUP */}
+          {/* Switch */}
           <div className="text-center mt-4">
             {modalShow === "SignUp" && (
               <p className="text-muted mb-0">
                 Already have an account?{" "}
                 <Button
                   variant="link"
-                  onClick={() => {
-                    setModalShow("Login");
-                    setError(null);
-                    setFieldErrors({});
-                  }}
+                  onClick={() => setModalShow("Login")}
                   className="p-0"
                   disabled={loading}
                 >
-                  Sign in here
+                  Sign in
                 </Button>
               </p>
             )}
 
             {modalShow === "Login" && (
               <p className="text-muted mb-0">
-                Need to create an admin account?{" "}
+                Need an admin account?{" "}
                 <Button
                   variant="link"
-                  onClick={() => {
-                    setModalShow("SignUp");
-                    setError(null);
-                    setFieldErrors({});
-                  }}
+                  onClick={() => setModalShow("SignUp")}
                   className="p-0"
                   disabled={loading}
                 >
-                  Create one here
+                  Create one
                 </Button>
               </p>
             )}
