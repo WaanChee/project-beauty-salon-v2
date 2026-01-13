@@ -10,28 +10,32 @@ import {
   Spinner,
   InputGroup,
 } from "react-bootstrap";
-import { useState, useEffect } from "react";
-import axios from "axios";
-import useLocalStorage from "use-local-storage";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import useLocalStorage from "use-local-storage";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+} from "firebase/auth";
+import { auth } from "../config/firebase";
+import axios from "axios";
 import pic2 from "../assets/images/beauty-salon-login-page-bg.png";
+import { signOut } from "firebase/auth";
 
 export default function CustomerAuthPage() {
   const navigate = useNavigate();
+  const hasRedirected = useRef(false); // Prevent multiple redirects
 
   // ============================================================================
-  // API URL - Update this to match your backend
+  // API URL
   // ============================================================================
   const API_URL =
-    "https://bdf8b629-3ab0-47ff-9325-50227345e965-00-1zki6gacehg14.pike.replit.dev";
+    "https://86605879-7581-472d-a2f1-a4d71a358503-00-1nvtq3qgvln7.pike.replit.dev";
 
   // ============================================================================
   // STATE
   // ============================================================================
-  const [customerToken, setCustomerToken] = useLocalStorage(
-    "customerToken",
-    ""
-  );
   const [customerUser, setCustomerUser] = useLocalStorage("customerUser", null);
 
   // Modal state
@@ -53,13 +57,68 @@ export default function CustomerAuthPage() {
   const [fieldErrors, setFieldErrors] = useState({});
 
   // ============================================================================
-  // REDIRECT IF ALREADY LOGGED IN
+  // CHECK IF USER IS ALREADY LOGGED IN (Simplified)
   // ============================================================================
   useEffect(() => {
-    if (customerToken) {
-      navigate("/customer/dashboard");
-    }
-  }, [customerToken, navigate]);
+    // Only run once when component mounts
+    if (hasRedirected.current) return;
+
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user && !hasRedirected.current) {
+        console.log("🔵 Firebase user detected:", user.uid);
+
+        // Check if we already have a valid token using direct localStorage
+        const existingToken = localStorage.getItem("customerToken");
+        const existingUser = localStorage.getItem("customerUser");
+
+        if (existingToken && existingUser) {
+          // User is already logged in with complete data, redirect immediately
+          console.log("✅ Complete session found, redirecting...");
+          hasRedirected.current = true;
+          navigate("/customer/dashboard", { replace: true });
+          return;
+        }
+
+        // If token exists but user data is missing, fetch it
+        if (existingToken && !existingUser) {
+          try {
+            const response = await axios.get(
+              `${API_URL}/customer/profile/${user.uid}`
+            );
+
+            const userProfile = {
+              uid: user.uid,
+              email: user.email,
+              ...response.data,
+            };
+
+            localStorage.setItem("customerUser", JSON.stringify(userProfile));
+            setCustomerUser(userProfile);
+
+            console.log("✅ User data restored");
+            hasRedirected.current = true;
+            navigate("/customer/dashboard", { replace: true });
+          } catch (error) {
+            console.error("Failed to restore user data:", error);
+            // Clear token and force re-login
+            await auth.signOut();
+            localStorage.removeItem("customerToken");
+            localStorage.removeItem("customerUser");
+          }
+          return;
+        }
+
+        // If no token at all, user needs to login (don't redirect)
+        console.log(
+          "⚠️ Firebase user exists but no token - user needs to login"
+        );
+        // Sign out the Firebase user since we don't have a complete session
+        await auth.signOut();
+      }
+    });
+
+    return () => unsubscribe();
+  }, []); // Empty dependency array - only run once
 
   // ============================================================================
   // CLEAR MESSAGES AFTER 5 SECONDS
@@ -95,7 +154,7 @@ export default function CustomerAuthPage() {
   };
 
   // ============================================================================
-  // VALIDATE FORM (CLIENT-SIDE)
+  // VALIDATE SIGNUP FORM
   // ============================================================================
   const validateSignupForm = () => {
     const errors = {};
@@ -118,15 +177,16 @@ export default function CustomerAuthPage() {
     // Phone validation
     if (!formData.phone_number.trim()) {
       errors.phone_number = "Phone number is required";
-    } else if (formData.phone_number.length < 10) {
-      errors.phone_number = "Please enter a valid phone number";
+    } else if (formData.phone_number.replace(/\D/g, "").length < 10) {
+      errors.phone_number = "Please enter a valid phone number (min 10 digits)";
     }
 
     // Password validation
     if (!formData.password) {
       errors.password = "Password is required";
-    } else if (formData.password.length < 8) {
-      errors.password = "Password must be at least 8 characters";
+    } else if (formData.password.length < 12) {
+      errors.password =
+        "Password must be at least 12 characters (recommended for security)";
     }
 
     setFieldErrors(errors);
@@ -149,7 +209,7 @@ export default function CustomerAuthPage() {
   };
 
   // ============================================================================
-  // HANDLE SIGNUP
+  // HANDLE SIGNUP (Signs out after signup to prevent auto-redirect)
   // ============================================================================
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -166,50 +226,81 @@ export default function CustomerAuthPage() {
     setLoading(true);
 
     try {
-      console.log("📝 Attempting signup...");
+      console.log("🔵 Creating Firebase account...");
 
-      const response = await axios.post(`${API_URL}/customer/signup`, {
-        name: formData.name.trim(),
-        email: formData.email.trim().toLowerCase(),
-        phone_number: formData.phone_number.trim(),
-        password: formData.password,
-      });
+      // Create Firebase user
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        formData.email.trim().toLowerCase(),
+        formData.password
+      );
 
-      console.log("✅ Signup successful:", response.data);
+      const user = userCredential.user;
+      console.log("✅ Firebase user created:", user.uid);
 
+      // Create user profile in PostgreSQL database
+      try {
+        await axios.post(`${API_URL}/customer/create-profile`, {
+          uid: user.uid,
+          name: formData.name.trim(),
+          email: formData.email.trim().toLowerCase(),
+          phone_number: formData.phone_number.trim(),
+        });
+        console.log("✅ User profile created in database");
+      } catch (dbError) {
+        console.error("Database profile creation error:", dbError);
+        setError(
+          "Account created but profile setup incomplete. Please contact support."
+        );
+        setLoading(false);
+        return;
+      }
+
+      // Sign out after signup to prevent auto-redirect
+      await auth.signOut();
+      console.log("✅ Signed out after signup (prevents auto-redirect)");
+
+      // Success message
       setSuccessMessage(
-        "🎉 Account created successfully! Please sign in with your credentials."
+        "🎉 Account created successfully! You can now sign in."
       );
 
       // Clear form
       setFormData({ name: "", email: "", phone_number: "", password: "" });
 
-      // Wait 1.5 seconds, then switch to login
+      // Wait and switch to login modal
       setTimeout(() => {
         setModalShow("Login");
         setSuccessMessage(null);
-      }, 1500);
+      }, 2000);
     } catch (error) {
       console.error("❌ Signup error:", error);
 
-      // Extract error message from response
+      // Firebase-specific error handling
       let errorMessage = "Signup failed. Please try again.";
 
-      if (error.response) {
-        // Server responded with error
-        const serverMessage = error.response.data?.message;
-
-        if (serverMessage) {
-          errorMessage = serverMessage;
-        } else if (error.response.status === 400) {
-          errorMessage = "Please check your information and try again.";
-        } else if (error.response.status === 500) {
-          errorMessage = "Server error. Please try again later.";
-        }
-      } else if (error.request) {
-        // Request made but no response
-        errorMessage =
-          "Cannot connect to server. Please check your internet connection.";
+      switch (error.code) {
+        case "auth/email-already-in-use":
+          errorMessage =
+            "An account with this email already exists. Please sign in instead.";
+          break;
+        case "auth/invalid-email":
+          errorMessage = "Please enter a valid email address.";
+          break;
+        case "auth/operation-not-allowed":
+          errorMessage =
+            "Email/password accounts are not enabled. Please contact support.";
+          break;
+        case "auth/weak-password":
+          errorMessage =
+            "Password is too weak. Please use at least 12 characters with mixed case, numbers, and symbols.";
+          break;
+        case "auth/network-request-failed":
+          errorMessage =
+            "Network error. Please check your internet connection.";
+          break;
+        default:
+          errorMessage = error.message || "Signup failed. Please try again.";
       }
 
       setError(errorMessage);
@@ -219,16 +310,14 @@ export default function CustomerAuthPage() {
   };
 
   // ============================================================================
-  // HANDLE LOGIN
+  // HANDLE LOGIN (Fixed - Properly stores data)
   // ============================================================================
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    // Clear previous errors
     setError(null);
     setFieldErrors({});
 
-    // Validate form
     if (!validateLoginForm()) {
       return;
     }
@@ -236,46 +325,129 @@ export default function CustomerAuthPage() {
     setLoading(true);
 
     try {
-      console.log("🔐 Attempting login...");
+      console.log("🔵 Logging in with Firebase...");
 
-      const response = await axios.post(`${API_URL}/customer/login`, {
-        email: formData.email.trim().toLowerCase(),
-        password: formData.password,
-      });
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        formData.email.trim().toLowerCase(),
+        formData.password
+      );
 
-      console.log("✅ Login successful:", response.data);
+      const user = userCredential.user;
+      console.log("✅ Login successful:", user.uid);
 
-      if (response.data?.auth && response.data?.token) {
-        // Save to localStorage
-        setCustomerToken(response.data.token);
-        setCustomerUser(response.data.user);
+      // Get Firebase ID token
+      const idToken = await user.getIdToken();
+      console.log("✅ Firebase ID token obtained");
+
+      // Get user profile from database
+      try {
+        const response = await axios.get(
+          `${API_URL}/customer/profile/${user.uid}`
+        );
+
+        const userProfile = {
+          uid: user.uid,
+          email: user.email,
+          ...response.data,
+        };
+
+        // 🔥 CRITICAL: Store data BEFORE setting state
+        localStorage.setItem("customerToken", idToken);
+        localStorage.setItem("customerUser", JSON.stringify(userProfile));
+
+        // Then update state
+        setCustomerUser(userProfile);
+
+        console.log("✅ Token and profile saved to localStorage");
+        console.log("📦 Stored data:", {
+          token: idToken.substring(0, 20) + "...",
+          user: userProfile.email,
+        });
 
         setSuccessMessage("✅ Welcome back! Redirecting to your dashboard...");
 
+        // Mark as redirected
+        hasRedirected.current = true;
+
         // Navigate after short delay
         setTimeout(() => {
-          navigate("/customer/dashboard");
+          navigate("/customer/dashboard", { replace: true });
         }, 1000);
+      } catch (dbError) {
+        console.error("Failed to fetch user profile:", dbError);
+        setError(
+          "Login successful but couldn't load profile. Please try again."
+        );
+        // Clear any partial data
+        await auth.signOut();
+        localStorage.removeItem("customerToken");
+        localStorage.removeItem("customerUser");
+        setCustomerUser(null);
       }
     } catch (error) {
       console.error("❌ Login error:", error);
 
-      // Extract error message
       let errorMessage = "Login failed. Please try again.";
 
-      if (error.response) {
-        const serverMessage = error.response.data?.message;
-
-        if (serverMessage) {
-          errorMessage = serverMessage;
-        } else if (error.response.status === 400) {
+      switch (error.code) {
+        case "auth/invalid-credential":
+        case "auth/user-not-found":
+        case "auth/wrong-password":
           errorMessage = "Invalid email or password. Please try again.";
-        } else if (error.response.status === 500) {
-          errorMessage = "Server error. Please try again later.";
-        }
-      } else if (error.request) {
-        errorMessage =
-          "Cannot connect to server. Please check your internet connection.";
+          break;
+        case "auth/user-disabled":
+          errorMessage =
+            "This account has been disabled. Please contact support.";
+          break;
+        case "auth/too-many-requests":
+          errorMessage =
+            "Too many failed login attempts. Please try again later or reset your password.";
+          break;
+        case "auth/network-request-failed":
+          errorMessage =
+            "Network error. Please check your internet connection.";
+          break;
+        default:
+          errorMessage = error.message || "Login failed. Please try again.";
+      }
+
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ============================================================================
+  // HANDLE PASSWORD RESET
+  // ============================================================================
+  const handlePasswordReset = async () => {
+    if (!formData.email.trim()) {
+      setError("Please enter your email address first.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await sendPasswordResetEmail(auth, formData.email.trim().toLowerCase());
+      setSuccessMessage(
+        "✅ Password reset email sent! Check your inbox for instructions."
+      );
+    } catch (error) {
+      console.error("Password reset error:", error);
+
+      let errorMessage = "Failed to send reset email.";
+
+      switch (error.code) {
+        case "auth/user-not-found":
+          errorMessage = "No account found with this email address.";
+          break;
+        case "auth/invalid-email":
+          errorMessage = "Please enter a valid email address.";
+          break;
+        default:
+          errorMessage = error.message;
       }
 
       setError(errorMessage);
@@ -296,19 +468,40 @@ export default function CustomerAuthPage() {
   };
 
   // ============================================================================
-  // GET PASSWORD STRENGTH
+  // PASSWORD STRENGTH INDICATOR
   // ============================================================================
   const getPasswordStrength = (password) => {
-    if (!password) return { strength: "", color: "" };
+    if (!password) return { strength: "", color: "", score: 0 };
 
-    if (password.length < 8) {
-      return { strength: "Too short", color: "danger" };
-    } else if (password.length < 12) {
-      return { strength: "Weak", color: "warning" };
-    } else if (password.length < 16) {
-      return { strength: "Good", color: "info" };
+    let score = 0;
+
+    if (password.length >= 12) score += 2;
+    else if (password.length >= 10) score += 1;
+    else return { strength: "Too short (min 12)", color: "danger", score: 0 };
+
+    if (/[a-z]/.test(password)) score += 1;
+    if (/[A-Z]/.test(password)) score += 1;
+    if (/[0-9]/.test(password)) score += 1;
+    if (/[^a-zA-Z0-9]/.test(password)) score += 1;
+
+    if (password.length >= 16) score += 1;
+    if (password.length >= 20) score += 1;
+
+    const commonPatterns = ["password", "123456", "qwerty", "abc123"];
+    if (
+      commonPatterns.some((pattern) => password.toLowerCase().includes(pattern))
+    ) {
+      return { strength: "Too common", color: "danger", score: 0 };
+    }
+
+    if (score <= 3) {
+      return { strength: "Weak", color: "danger", score };
+    } else if (score <= 5) {
+      return { strength: "Fair", color: "warning", score };
+    } else if (score <= 7) {
+      return { strength: "Good", color: "info", score };
     } else {
-      return { strength: "Strong", color: "success" };
+      return { strength: "Strong", color: "success", score };
     }
   };
 
@@ -340,7 +533,7 @@ export default function CustomerAuthPage() {
           {error && (
             <Alert variant="danger" dismissible onClose={() => setError(null)}>
               <i className="bi bi-exclamation-triangle-fill me-2"></i>
-              <strong>Error:</strong> {error}
+              {error}
             </Alert>
           )}
 
@@ -483,7 +676,7 @@ export default function CustomerAuthPage() {
                   onChange={handleChange}
                   placeholder={
                     modalShow === "SignUp"
-                      ? "Create a strong password (min 8 characters)"
+                      ? "Create a password (min 12 characters)"
                       : "Enter your password"
                   }
                   isInvalid={!!fieldErrors.password}
@@ -504,11 +697,39 @@ export default function CustomerAuthPage() {
               {/* Password strength indicator (signup only) */}
               {modalShow === "SignUp" && formData.password && (
                 <div className="mt-2">
-                  <small className={`text-${passwordStrength.color}`}>
-                    <i className="bi bi-shield-fill me-1"></i>
-                    Password strength:{" "}
-                    <strong>{passwordStrength.strength}</strong>
-                  </small>
+                  <div className="progress" style={{ height: "6px" }}>
+                    <div
+                      className={`progress-bar bg-${passwordStrength.color}`}
+                      style={{
+                        width: `${(passwordStrength.score / 8) * 100}%`,
+                      }}
+                    ></div>
+                  </div>
+
+                  <div className="d-flex justify-content-between align-items-center mt-1">
+                    <small className={`text-${passwordStrength.color} fw-bold`}>
+                      <i className="bi bi-shield-fill me-1"></i>
+                      {passwordStrength.strength}
+                    </small>
+                    <small className="text-muted">
+                      {formData.password.length}/128 characters
+                    </small>
+                  </div>
+                </div>
+              )}
+
+              {/* Forgot password link (login only) */}
+              {modalShow === "Login" && (
+                <div className="mt-2">
+                  <Button
+                    variant="link"
+                    className="p-0 small"
+                    onClick={handlePasswordReset}
+                    disabled={loading}
+                  >
+                    <i className="bi bi-key me-1"></i>
+                    Forgot your password?
+                  </Button>
                 </div>
               )}
             </Form.Group>
@@ -575,6 +796,14 @@ export default function CustomerAuthPage() {
                 </Button>
               </p>
             )}
+          </div>
+
+          {/* Firebase branding */}
+          <div className="text-center mt-3">
+            <small className="text-muted">
+              <i className="bi bi-shield-check me-1"></i>
+              Secured by Firebase Authentication
+            </small>
           </div>
         </Modal.Body>
       </Modal>
