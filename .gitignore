@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# src/config/firebase.js
+# Firebase credentials - NEVER commit these files!
+firebase-service-account.json
+.env
+.env.local
+.env.*.local
