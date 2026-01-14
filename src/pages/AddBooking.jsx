@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import {
   createBooking,
   clearMessages,
+  fetchBookings,
 } from "../features/bookings/bookingSlice";
 
 export default function AddBooking() {
@@ -29,30 +30,61 @@ export default function AddBooking() {
   // ============================================================================
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [customerUser, setCustomerUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isFetchingProfile, setIsFetchingProfile] = useState(false);
+  const [hasPrefilledForm, setHasPrefilledForm] = useState(false); // Track if form was already pre-filled
+  const [formResetKey, setFormResetKey] = useState(0); // Force form remount after submission
 
   // Check authentication on mount - works for BOTH customer and admin
   useEffect(() => {
-    // Check for customer auth first
-    let token = localStorage.getItem("customerToken");
-    let userJson = localStorage.getItem("customerUser");
-    let isAdmin = false;
+    let token = null;
+    let userJson = null;
+    let adminDetected = false;
 
-    // If no customer auth, check for admin auth
-    if (!token || !userJson) {
-      const adminUserJson = localStorage.getItem("adminUser");
-      if (adminUserJson) {
-        console.log("🔵 Admin user detected, using admin credentials");
-        userJson = adminUserJson;
-        token = "admin"; // Admin doesn't use token
-        isAdmin = true;
+    // Priority 1: admin
+    const adminUserJson = localStorage.getItem("adminUser");
+    if (adminUserJson) {
+      try {
+        const parsedAdmin = JSON.parse(adminUserJson);
+        if (parsedAdmin && (parsedAdmin.email || parsedAdmin.username)) {
+          userJson = adminUserJson;
+          token = "admin";
+          adminDetected = true;
+          setIsAdmin(true);
+          console.log("🔵 Admin user detected, using admin credentials");
+        }
+      } catch (err) {
+        console.error("Failed to parse admin user:", err);
+      }
+    }
+
+    // Priority 2: customer
+    if (!adminDetected) {
+      token = localStorage.getItem("customerToken");
+      userJson = localStorage.getItem("customerUser");
+
+      if (userJson) {
+        try {
+          const parsed = JSON.parse(userJson);
+          if (!parsed) {
+            console.log("⚠️ customerUser is null/invalid, clearing...");
+            localStorage.removeItem("customerUser");
+            localStorage.removeItem("customerToken");
+            token = null;
+            userJson = null;
+          }
+        } catch (err) {
+          console.error("Failed to parse customer user:", err);
+          token = null;
+          userJson = null;
+        }
       }
     }
 
     console.log("🔵 AddBooking Auth Check:", {
       hasToken: !!token,
       hasUser: !!userJson,
-      isAdmin,
+      isAdmin: adminDetected,
     });
 
     if (!token || !userJson) {
@@ -64,13 +96,16 @@ export default function AddBooking() {
     try {
       const user = JSON.parse(userJson);
 
-      // Verify user object has required properties (email)
-      if (!user || !user.email) {
+      // Verify user object has required properties (email or username)
+      if (!user || (!user.email && !user.username)) {
         console.log("❌ Invalid user data - missing required fields:", {
           hasEmail: !!user?.email,
+          hasUsername: !!user?.username,
           userData: user,
         });
-        navigate(isAdmin ? "/login" : "/customer/auth", { replace: true });
+        navigate(adminDetected ? "/login/admin" : "/customer/auth", {
+          replace: true,
+        });
         return;
       }
 
@@ -81,18 +116,22 @@ export default function AddBooking() {
       if (user.id || user.username) {
         console.log(
           "✅ User authenticated:",
-          user.email,
+          user.email || user.username,
           "| ID:",
-          user.id || user.username
+          user.id || user.username,
+          "| Type:",
+          adminDetected ? "ADMIN" : "CUSTOMER"
         );
-      } else if (user.uid && !isAdmin) {
+      } else if (user.uid && !adminDetected) {
         console.log("⏳ User has Firebase UID, fetching database profile...");
         fetchUserProfile(user.uid);
       }
     } catch (error) {
       console.error("❌ Failed to parse user data:", error);
-      localStorage.removeItem("customerToken");
-      localStorage.removeItem("customerUser");
+      if (!adminDetected) {
+        localStorage.removeItem("customerToken");
+        localStorage.removeItem("customerUser");
+      }
       navigate("/", { replace: true });
     }
   }, [navigate]);
@@ -155,31 +194,65 @@ export default function AddBooking() {
     time: "",
   });
 
-  // Pre-fill form when customerUser is loaded
+  // Pre-fill form when customerUser is loaded (ONLY ONCE)
   useEffect(() => {
-    if (customerUser) {
-      console.log("📝 Pre-filling form with customer data:", {
+    if (customerUser && !hasPrefilledForm) {
+      console.log("📝 Pre-filling form with user data (INITIAL LOAD ONLY):", {
         id: customerUser.id,
-        name: customerUser.name,
+        name: customerUser.name || customerUser.username,
         email: customerUser.email,
+        isAdmin,
       });
+
+      // For admin: use admin name/email (locked), phone EMPTY (editable per booking)
+      // For customer: use customer name/email/phone (locked email, editable phone)
       setFormData((prev) => ({
         ...prev,
-        user_name: customerUser.name || "",
+        user_name: customerUser.name || customerUser.username || "",
         user_email: customerUser.email || "",
-        user_phone: customerUser.phone_number || "",
-        customer_id: customerUser.id, // Include customer_id for backend
+        user_phone: isAdmin ? "" : customerUser.phone_number || "", // Empty for admins
+        customer_id: isAdmin ? null : customerUser.id, // Only for customers
       }));
+
+      setHasPrefilledForm(true); // Mark as pre-filled to prevent re-running
     }
-  }, [customerUser]);
+  }, [customerUser, isAdmin, hasPrefilledForm]);
+
+  // ============================================================================
+  // HELPER: Get user info (handles both admin and customer)
+  // ============================================================================
+  const getUserDisplayName = () => {
+    if (!customerUser) return "";
+    return customerUser.name || customerUser.username || "";
+  };
+
+  const getUserDisplayEmail = () => {
+    return customerUser?.email || "";
+  };
+
+  const getUserDisplayPhone = () => {
+    return customerUser?.phone_number || "";
+  };
 
   // ============================================================================
   // HANDLE INPUT CHANGES
   // ============================================================================
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    // Validate phone number - only allow digits, spaces, +, -, and ()
+    if (name === "user_phone") {
+      // Allow only numbers, +, spaces, -, and () for phone formatting
+      const phoneRegex = /^[\d\s+\-()]*$/;
+      if (!phoneRegex.test(value)) {
+        console.log("❌ Invalid phone input rejected:", value);
+        return; // Don't update if invalid characters
+      }
+    }
+
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
   };
 
@@ -189,21 +262,61 @@ export default function AddBooking() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Prepare payload; if admin, omit customer_id so backend doesn't reject null
+    const payload = { ...formData };
+    if (isAdmin) {
+      delete payload.customer_id;
+    }
+
+    console.log("📤 === BOOKING SUBMISSION #" + Date.now() + " ===");
+    console.log("📤 Current formData state:", formData);
+    console.log(
+      "📤 Sending payload to backend:",
+      JSON.stringify(payload, null, 2)
+    );
+    console.log("📤 IsAdmin:", isAdmin);
+    console.log("📤 Timestamp:", new Date().toISOString());
+
     // Dispatch the createBooking action
-    const result = await dispatch(createBooking(formData));
+    const result = await dispatch(createBooking(payload));
+
+    console.log("📥 Backend response received:", {
+      success: createBooking.fulfilled.match(result),
+      payload: result.payload,
+      timestamp: new Date().toISOString(),
+    });
 
     // Only clear booking fields if successful, keep user info
     if (createBooking.fulfilled.match(result)) {
-      setFormData({
-        user_name: customerUser?.name || "",
+      console.log("✅ Booking created successfully!");
+      console.log("📋 Booking ID from backend:", result.payload?.id);
+
+      // Reset to clean state: preserve name/email, clear phone and booking fields
+      const resetFormData = {
+        user_name: customerUser?.name || customerUser?.username || "",
         user_email: customerUser?.email || "",
-        user_phone: customerUser?.phone_number || "",
-        customer_id: customerUser?.id, // Keep customer_id
-        title: "", // Clear service
-        description: "", // Clear description
-        date: "", // Clear date
-        time: "", // Clear time
-      });
+        user_phone: "", // Clear phone for next booking
+        customer_id: isAdmin ? null : customerUser?.id,
+        title: "", // Clear booking details
+        description: "",
+        date: "",
+        time: "",
+      };
+
+      console.log(
+        "🔄 Resetting form to empty state (name/email preserved, phone cleared):",
+        resetFormData
+      );
+      setFormData(resetFormData);
+
+      // Force form remount to clear browser cache
+      setFormResetKey((prev) => prev + 1);
+
+      // Refresh bookings list to verify new booking is separate
+      console.log("🔄 Refreshing bookings list from backend...");
+      await dispatch(fetchBookings());
+    } else {
+      console.error("❌ Booking creation failed:", result.payload);
     }
   };
 
@@ -251,21 +364,27 @@ export default function AddBooking() {
               dismissible
               onClose={() => dispatch(clearMessages())}
             >
-              {error}
+              {typeof error === "string"
+                ? error
+                : error?.error || error?.message || JSON.stringify(error)}
             </Alert>
           )}
 
-          <Form onSubmit={handleSubmit}>
+          <Form onSubmit={handleSubmit} key={formResetKey}>
             {/* ================================================================ */}
             {/* CUSTOMER INFORMATION SECTION - Pre-filled and Read-only */}
             {/* ================================================================ */}
             <Card className="mb-4">
               <Card.Header>
-                <h5 className="mb-0">Your Information</h5>
+                <h5 className="mb-0">
+                  {isAdmin ? "Booking Created By" : "Your Information"}
+                </h5>
               </Card.Header>
               <Card.Body>
                 <Form.Group className="mb-3">
-                  <Form.Label>Full Name *</Form.Label>
+                  <Form.Label>
+                    {isAdmin ? "Admin Name" : "Full Name"} *
+                  </Form.Label>
                   <Form.Control
                     type="text"
                     name="user_name"
@@ -277,12 +396,14 @@ export default function AddBooking() {
                     style={{ backgroundColor: "#f8f9fa" }}
                   />
                   <Form.Text className="text-muted">
-                    This is your registered name
+                    {isAdmin
+                      ? "Logged in as: " + customerUser?.username
+                      : "This is your registered name"}
                   </Form.Text>
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                  <Form.Label>Email *</Form.Label>
+                  <Form.Label>{isAdmin ? "Admin Email" : "Email"} *</Form.Label>
                   <Form.Control
                     type="email"
                     name="user_email"
@@ -299,17 +420,26 @@ export default function AddBooking() {
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                  <Form.Label>Phone Number *</Form.Label>
+                  <Form.Label>
+                    {isAdmin ? "Admin Phone" : "Phone Number"} *
+                  </Form.Label>
                   <Form.Control
-                    type="tel"
+                    type="text"
                     name="user_phone"
                     placeholder="+60123456789"
                     value={formData.user_phone}
                     onChange={handleChange}
                     required
+                    autoComplete="new-password"
+                    data-form-type="other"
+                    data-lpignore="true"
+                    pattern="[\d\s+\-()]+"
+                    title="Please enter a valid phone number (only numbers, +, -, spaces, and parentheses allowed)"
                   />
                   <Form.Text className="text-muted">
-                    Update your phone number if needed
+                    {isAdmin
+                      ? "Enter contact phone for this booking (numbers only)"
+                      : "Update your phone number if needed"}
                   </Form.Text>
                 </Form.Group>
               </Card.Body>
@@ -378,17 +508,41 @@ export default function AddBooking() {
             </Card>
 
             {/* ================================================================ */}
-            {/* SUBMIT BUTTON */}
+            {/* SUBMIT & CLEAR BUTTONS */}
             {/* ================================================================ */}
-            <Button
-              variant="primary"
-              type="submit"
-              disabled={loading}
-              className="w-100"
-              size="lg"
-            >
-              {loading ? "Creating Booking..." : "Confirm Booking"}
-            </Button>
+            <div className="d-flex gap-3 mb-3">
+              <Button
+                variant="primary"
+                type="submit"
+                disabled={loading}
+                className="flex-grow-1"
+                size="lg"
+              >
+                {loading ? "Creating Booking..." : "Confirm Booking"}
+              </Button>
+              <Button
+                variant="outline-secondary"
+                type="button"
+                disabled={loading}
+                size="lg"
+                onClick={() => {
+                  // Clear booking details AND phone number
+                  setFormData((prev) => ({
+                    ...prev,
+                    user_phone: "", // Clear phone for fresh entry
+                    title: "", // Clear booking fields
+                    description: "",
+                    date: "",
+                    time: "",
+                  }));
+                  console.log(
+                    "🔄 Form reset (booking details cleared, phone cleared)"
+                  );
+                }}
+              >
+                Reset Form
+              </Button>
+            </div>
           </Form>
 
           {/* Info Alert */}
