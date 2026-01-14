@@ -28,6 +28,7 @@ export default function AdminPage({ handleLogout }) {
   // State for edit modal
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Fetch bookings when component loads
   useEffect(() => {
@@ -56,6 +57,17 @@ export default function AdminPage({ handleLogout }) {
     dispatch(fetchBookings());
   };
 
+  // Handle silent refresh - no loading spinner, instant background update
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await dispatch(fetchBookings());
+    } finally {
+      // Small delay to show the icon briefly
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
+
   // Get status badge color
   const getStatusColor = (status) => {
     switch (status) {
@@ -79,6 +91,18 @@ export default function AdminPage({ handleLogout }) {
             <div className="d-flex gap-2">
               <Button variant="primary" onClick={() => navigate("/addBooking")}>
                 + Create New Booking
+              </Button>
+              <Button
+                variant="outline-info"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                title="Refresh bookings list"
+              >
+                <i
+                  className={`bi bi-arrow-clockwise ${
+                    isRefreshing ? "spin" : ""
+                  }`}
+                ></i>
               </Button>
               <Button variant="outline-secondary" onClick={handleLogout}>
                 <i className="bi bi-box-arrow-right me-2"></i>
