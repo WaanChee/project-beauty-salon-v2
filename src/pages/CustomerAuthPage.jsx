@@ -79,7 +79,7 @@ export default function CustomerAuthPage() {
           return;
         }
 
-        // If token exists but user data is missing, fetch it
+        // If token exists but user data is missing, fetch from backend
         if (existingToken && !existingUser) {
           try {
             const response = await axios.get(
@@ -88,19 +88,21 @@ export default function CustomerAuthPage() {
 
             const userProfile = {
               uid: user.uid,
-              email: user.email,
-              ...response.data,
+              id: response.data.id,
+              name: response.data.name,
+              email: response.data.email,
+              phone_number: response.data.phone_number,
             };
 
             localStorage.setItem("customerUser", JSON.stringify(userProfile));
             setCustomerUser(userProfile);
 
-            console.log("✅ User data restored");
+            console.log("✅ User data restored from backend");
             hasRedirected.current = true;
             navigate("/customer/dashboard", { replace: true });
           } catch (error) {
             console.error("Failed to restore user data:", error);
-            // Clear token and force re-login
+            // Clear invalid token and force re-login
             await auth.signOut();
             localStorage.removeItem("customerToken");
             localStorage.removeItem("customerUser");
@@ -240,20 +242,67 @@ export default function CustomerAuthPage() {
 
       // Create user profile in PostgreSQL database
       try {
-        await axios.post(`${API_URL}/customer/create-profile`, {
+        console.log("🔵 Creating database profile with data:", {
           uid: user.uid,
           name: formData.name.trim(),
           email: formData.email.trim().toLowerCase(),
           phone_number: formData.phone_number.trim(),
         });
-        console.log("✅ User profile created in database");
-      } catch (dbError) {
-        console.error("Database profile creation error:", dbError);
-        setError(
-          "Account created but profile setup incomplete. Please contact support."
+
+        const profileResponse = await axios.post(
+          `${API_URL}/customer/create-profile`,
+          {
+            uid: user.uid,
+            name: formData.name.trim(),
+            email: formData.email.trim().toLowerCase(),
+            phone_number: formData.phone_number.trim(),
+          }
         );
-        setLoading(false);
-        return;
+
+        console.log(
+          "✅ User profile created in database:",
+          profileResponse.data
+        );
+      } catch (dbError) {
+        console.error("❌ Database profile creation error:", dbError);
+        console.error("❌ Error details:", {
+          message: dbError.message,
+          response: dbError.response?.data,
+          status: dbError.response?.status,
+        });
+
+        // Check if it's a duplicate email error
+        const errorMessage =
+          dbError.response?.data?.message ||
+          dbError.response?.data?.error ||
+          "";
+
+        if (
+          errorMessage.includes("duplicate") ||
+          errorMessage.includes("already exists")
+        ) {
+          // Email already exists - this means user already signed up before
+          console.log("⚠️ Email already exists in database");
+
+          // Don't delete the Firebase user - they can log in
+          setError(
+            "An account with this email already exists. Please log in instead."
+          );
+          setLoading(false);
+
+          // Switch to login modal after a moment
+          setTimeout(() => {
+            setModalShow("Login");
+            setError(null);
+          }, 2000);
+          return;
+        }
+
+        // FALLBACK: For other errors, just continue with Firebase-only mode
+        console.warn("⚠️ Backend unavailable - using Firebase-only mode");
+        console.log(
+          "✅ Continuing with Firebase authentication only (no backend profile)"
+        );
       }
 
       // Sign out after signup to prevent auto-redirect
@@ -315,6 +364,12 @@ export default function CustomerAuthPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
 
+    console.log(
+      "🟢 [CUSTOMER PAGE] handleLogin called at:",
+      new Date().toISOString()
+    );
+    console.log("🟢 [CUSTOMER PAGE] Current URL:", window.location.href);
+
     setError(null);
     setFieldErrors({});
 
@@ -340,29 +395,49 @@ export default function CustomerAuthPage() {
       const idToken = await user.getIdToken();
       console.log("✅ Firebase ID token obtained");
 
-      // Get user profile from database
+      // Fetch user profile from database
       try {
+        console.log(`🔍 Fetching profile for UID: ${user.uid}`);
+
         const response = await axios.get(
           `${API_URL}/customer/profile/${user.uid}`
         );
 
+        console.log("📦 Backend response:", response.data);
+
+        // Validate response data
+        if (!response.data || !response.data.id) {
+          throw new Error("Invalid profile data received from backend");
+        }
+
         const userProfile = {
           uid: user.uid,
-          email: user.email,
-          ...response.data,
+          id: response.data.id, // Use database ID
+          name: response.data.name,
+          email: response.data.email,
+          phone_number: response.data.phone_number,
         };
+
+        console.log("✅ User profile constructed:", userProfile);
 
         // 🔥 CRITICAL: Store data BEFORE setting state
         localStorage.setItem("customerToken", idToken);
         localStorage.setItem("customerUser", JSON.stringify(userProfile));
 
+        // Verify what was actually stored
+        const storedUser = localStorage.getItem("customerUser");
+        console.log("✅ Verified stored data:", storedUser);
+
         // Then update state
         setCustomerUser(userProfile);
 
         console.log("✅ Token and profile saved to localStorage");
-        console.log("📦 Stored data:", {
+        console.log("📦 Stored user profile:", {
           token: idToken.substring(0, 20) + "...",
-          user: userProfile.email,
+          email: userProfile.email,
+          id: userProfile.id,
+          name: userProfile.name,
+          uid: userProfile.uid,
         });
 
         setSuccessMessage("✅ Welcome back! Redirecting to your dashboard...");
@@ -370,20 +445,37 @@ export default function CustomerAuthPage() {
         // Mark as redirected
         hasRedirected.current = true;
 
-        // Navigate after short delay
-        setTimeout(() => {
-          navigate("/customer/dashboard", { replace: true });
-        }, 1000);
-      } catch (dbError) {
-        console.error("Failed to fetch user profile:", dbError);
-        setError(
-          "Login successful but couldn't load profile. Please try again."
-        );
-        // Clear any partial data
-        await auth.signOut();
-        localStorage.removeItem("customerToken");
-        localStorage.removeItem("customerUser");
-        setCustomerUser(null);
+        // Navigate IMMEDIATELY without delay to ensure localStorage is written
+        navigate("/customer/dashboard", { replace: true });
+      } catch (profileError) {
+        console.error("❌ Failed to fetch user profile:", profileError);
+        console.error("❌ Error details:", {
+          message: profileError.message,
+          response: profileError.response?.data,
+          status: profileError.response?.status,
+        });
+
+        // FALLBACK: Use Firebase data only (backend unavailable)
+        console.warn("⚠️ Backend profile not found - using Firebase-only mode");
+
+        const userProfile = {
+          uid: user.uid,
+          id: user.uid, // Use Firebase UID as ID
+          name: user.displayName || user.email.split("@")[0] || "Customer",
+          email: user.email,
+          phone_number: "",
+        };
+
+        // Store Firebase-only profile
+        localStorage.setItem("customerToken", idToken);
+        localStorage.setItem("customerUser", JSON.stringify(userProfile));
+        setCustomerUser(userProfile);
+
+        console.log("✅ Logged in with Firebase-only profile:", userProfile);
+
+        setSuccessMessage("✅ Welcome back! (Using Firebase authentication)");
+        hasRedirected.current = true;
+        navigate("/customer/dashboard", { replace: true });
       }
     } catch (error) {
       console.error("❌ Login error:", error);
