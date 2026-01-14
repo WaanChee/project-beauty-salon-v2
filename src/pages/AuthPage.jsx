@@ -203,6 +203,12 @@ export default function AuthPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
 
+    console.log(
+      "🔴 [ADMIN PAGE] handleLogin called at:",
+      new Date().toISOString()
+    );
+    console.log("🔴 [ADMIN PAGE] Current URL:", window.location.href);
+
     setError(null);
     setFieldErrors({});
 
