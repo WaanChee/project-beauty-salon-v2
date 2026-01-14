@@ -58,8 +58,7 @@ export default function CustomerDashboard() {
           localStorage.removeItem("customerUser");
           localStorage.removeItem("customerToken");
 
-          alert("Your session data is invalid. Please log in again.");
-
+          // Don't show alert - just redirect
           // Redirect to login
           navigate("/customer/auth", { replace: true });
           return;
@@ -77,8 +76,8 @@ export default function CustomerDashboard() {
         navigate("/customer/auth", { replace: true });
       }
     } else {
-      console.log("⚠️ [MOUNT] No customerUser in localStorage, redirecting...");
-      // Give it a moment in case localStorage is still writing
+      console.log("⚠️ [MOUNT] No customerUser in localStorage, waiting...");
+      // Give localStorage more time to write (race condition with navigation)
       setTimeout(() => {
         const retryStored = localStorage.getItem("customerUser");
         if (!retryStored) {
@@ -86,9 +85,20 @@ export default function CustomerDashboard() {
           navigate("/customer/auth", { replace: true });
         } else {
           console.log("✅ [MOUNT RETRY] Data found on retry, reloading");
-          window.location.reload();
+          // Parse and set the user data instead of reloading
+          try {
+            const parsedUser = JSON.parse(retryStored);
+            if (parsedUser && parsedUser.email && parsedUser.id) {
+              setCustomerUser(parsedUser);
+              console.log("✅ User data loaded on retry");
+            } else {
+              window.location.reload();
+            }
+          } catch {
+            window.location.reload();
+          }
         }
-      }, 100);
+      }, 200); // Increased from 100ms to 200ms for more reliability
     }
   }, []); // Run only once on mount
 
