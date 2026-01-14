@@ -67,6 +67,13 @@ export default function CustomerAuthPage() {
       if (user && !hasRedirected.current) {
         console.log("🔵 Firebase user detected:", user.uid);
 
+        // Check if this is an admin user - if so, don't redirect
+        const adminUser = localStorage.getItem("adminUser");
+        if (adminUser) {
+          console.log("🔵 Admin user detected, skipping customer auth redirect");
+          return;
+        }
+
         // Check if we already have a valid token using direct localStorage
         const existingToken = localStorage.getItem("customerToken");
         const existingUser = localStorage.getItem("customerUser");
