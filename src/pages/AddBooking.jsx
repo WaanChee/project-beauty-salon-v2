@@ -29,33 +29,115 @@ export default function AddBooking() {
   // ============================================================================
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [customerUser, setCustomerUser] = useState(null);
+  const [isFetchingProfile, setIsFetchingProfile] = useState(false);
 
-  // Check authentication on mount
+  // Check authentication on mount - works for BOTH customer and admin
   useEffect(() => {
-    const token = localStorage.getItem("customerToken");
-    const userJson = localStorage.getItem("customerUser");
+    // Check for customer auth first
+    let token = localStorage.getItem("customerToken");
+    let userJson = localStorage.getItem("customerUser");
+    let isAdmin = false;
+
+    // If no customer auth, check for admin auth
+    if (!token || !userJson) {
+      const adminUserJson = localStorage.getItem("adminUser");
+      if (adminUserJson) {
+        console.log("🔵 Admin user detected, using admin credentials");
+        userJson = adminUserJson;
+        token = "admin"; // Admin doesn't use token
+        isAdmin = true;
+      }
+    }
 
     console.log("🔵 AddBooking Auth Check:", {
       hasToken: !!token,
       hasUser: !!userJson,
+      isAdmin,
     });
 
     if (!token || !userJson) {
-      console.log("❌ Not authenticated, redirecting to login...");
-      navigate("/login", { replace: true });
+      console.log("❌ Not authenticated, redirecting to login selector...");
+      navigate("/", { replace: true });
       return;
     }
 
     try {
       const user = JSON.parse(userJson);
+
+      // Verify user object has required properties (email)
+      if (!user || !user.email) {
+        console.log("❌ Invalid user data - missing required fields:", {
+          hasEmail: !!user?.email,
+          userData: user,
+        });
+        navigate(isAdmin ? "/login" : "/customer/auth", { replace: true });
+        return;
+      }
+
       setCustomerUser(user);
       setIsAuthenticated(true);
-      console.log("✅ User authenticated:", user.email);
+
+      // If user has ID or username (admin), we're good
+      if (user.id || user.username) {
+        console.log(
+          "✅ User authenticated:",
+          user.email,
+          "| ID:",
+          user.id || user.username
+        );
+      } else if (user.uid && !isAdmin) {
+        console.log("⏳ User has Firebase UID, fetching database profile...");
+        fetchUserProfile(user.uid);
+      }
     } catch (error) {
       console.error("❌ Failed to parse user data:", error);
-      navigate("/login", { replace: true });
+      localStorage.removeItem("customerToken");
+      localStorage.removeItem("customerUser");
+      navigate("/", { replace: true });
     }
   }, [navigate]);
+
+  // Fetch user profile from backend to get database ID
+  const fetchUserProfile = async (firebaseUid) => {
+    setIsFetchingProfile(true);
+    try {
+      const API_URL =
+        "https://86605879-7581-472d-a2f1-a4d71a358503-00-1nvtq3qgvln7.pike.replit.dev";
+      const response = await fetch(
+        `${API_URL}/customer/profile/${firebaseUid}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch profile");
+      }
+
+      const profileData = await response.json();
+
+      // Update customerUser with complete data
+      const completeUser = {
+        ...customerUser,
+        id: profileData.id,
+        name: profileData.name,
+        phone_number: profileData.phone_number,
+      };
+
+      localStorage.setItem("customerUser", JSON.stringify(completeUser));
+      setCustomerUser(completeUser);
+
+      console.log(
+        "✅ User profile fetched and authenticated:",
+        completeUser.email,
+        "| ID:",
+        completeUser.id
+      );
+    } catch (error) {
+      console.error("❌ Failed to fetch user profile:", error);
+      // Still allow form, but warn user
+      setError("Could not load your profile. Continuing anyway...");
+    } finally {
+      setIsFetchingProfile(false);
+    }
+  };
 
   // ============================================================================
   // FORM STATE - Pre-filled with customer info
@@ -65,6 +147,7 @@ export default function AddBooking() {
     user_name: "",
     user_email: "",
     user_phone: "",
+    customer_id: null, // Database customer ID for linking booking
     // Booking Details (empty, user fills these)
     title: "",
     description: "",
@@ -75,11 +158,17 @@ export default function AddBooking() {
   // Pre-fill form when customerUser is loaded
   useEffect(() => {
     if (customerUser) {
+      console.log("📝 Pre-filling form with customer data:", {
+        id: customerUser.id,
+        name: customerUser.name,
+        email: customerUser.email,
+      });
       setFormData((prev) => ({
         ...prev,
         user_name: customerUser.name || "",
         user_email: customerUser.email || "",
         user_phone: customerUser.phone_number || "",
+        customer_id: customerUser.id, // Include customer_id for backend
       }));
     }
   }, [customerUser]);
@@ -109,6 +198,7 @@ export default function AddBooking() {
         user_name: customerUser?.name || "",
         user_email: customerUser?.email || "",
         user_phone: customerUser?.phone_number || "",
+        customer_id: customerUser?.id, // Keep customer_id
         title: "", // Clear service
         description: "", // Clear description
         date: "", // Clear date
