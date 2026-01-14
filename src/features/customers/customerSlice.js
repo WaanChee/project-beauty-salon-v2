@@ -22,7 +22,15 @@ export const fetchCustomerBookings = createAsyncThunk(
       console.log("🔵 Fetching bookings for user:", userId);
 
       const response = await axios.get(
-        `${API_URL}/customer/bookings/${userId}`
+        `${API_URL}/customer/bookings/${userId}`,
+        {
+          // Cache-busting + explicit no-cache headers to force fresh data
+          params: { _: Date.now() },
+          headers: {
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+          },
+        }
       );
 
       console.log("✅ Bookings fetched:", response.data);
@@ -87,6 +95,13 @@ const customerSlice = createSlice({
       state.error = null;
       state.successMessage = null;
     },
+    // Reset entire customer state on logout
+    resetCustomerState: (state) => {
+      state.bookings = [];
+      state.loading = false;
+      state.error = null;
+      state.successMessage = null;
+    },
   },
   extraReducers: (builder) => {
     // ========================================================================
@@ -133,5 +148,6 @@ const customerSlice = createSlice({
   },
 });
 
-export const { clearCustomerMessages } = customerSlice.actions;
+export const { clearCustomerMessages, resetCustomerState } =
+  customerSlice.actions;
 export default customerSlice.reducer;
