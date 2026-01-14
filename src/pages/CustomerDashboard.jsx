@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Container,
@@ -14,15 +14,18 @@ import { useNavigate } from "react-router-dom";
 import useLocalStorage from "use-local-storage";
 import { signOut } from "firebase/auth";
 import { auth } from "../config/firebase";
+import axios from "axios";
 import {
   fetchCustomerBookings,
   cancelBooking,
   clearCustomerMessages,
+  resetCustomerState,
 } from "../features/customers/customerSlice";
 
 export default function CustomerDashboard() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Get bookings from Redux (still using Redux for bookings management)
   const { bookings, loading, error, successMessage } = useSelector(
@@ -32,41 +35,189 @@ export default function CustomerDashboard() {
   // Get customer info from localStorage (linked to Firebase)
   const [customerUser, setCustomerUser] = useLocalStorage("customerUser", null);
 
-  // ============================================================================
-  // FETCH BOOKINGS ON MOUNT
-  // ============================================================================
   useEffect(() => {
-    // Check if customerUser exists and has id
-    if (customerUser?.id) {
-      dispatch(fetchCustomerBookings(customerUser.id));
-    } else if (customerUser?.uid) {
-      // If we only have Firebase UID, fetch the profile first
-      fetchUserProfile();
-    }
-  }, [dispatch, customerUser]);
+    // Force sync from localStorage when component mounts
+    const stored = localStorage.getItem("customerUser");
 
-  // Fetch user profile from database using Firebase UID
+    console.log("🔵 [MOUNT] Raw localStorage customerUser:", stored);
+
+    if (stored) {
+      try {
+        const parsedUser = JSON.parse(stored);
+        console.log("🔄 [MOUNT] Parsed user data:", parsedUser);
+
+        // Validate that we have required fields
+        if (!parsedUser || !parsedUser.email || !parsedUser.id) {
+          console.error(
+            "❌ [MOUNT] Invalid user data in localStorage:",
+            parsedUser
+          );
+          console.log("🗑️ [MOUNT] Clearing corrupt localStorage data...");
+
+          // Clear ALL customer data
+          localStorage.removeItem("customerUser");
+          localStorage.removeItem("customerToken");
+
+          alert("Your session data is invalid. Please log in again.");
+
+          // Redirect to login
+          navigate("/customer/auth", { replace: true });
+          return;
+        }
+
+        console.log("✅ [MOUNT] Valid user data found");
+        setCustomerUser(parsedUser);
+      } catch (err) {
+        console.error(
+          "⚠️ [MOUNT] Failed to parse customerUser from localStorage:",
+          err
+        );
+        localStorage.removeItem("customerUser");
+        localStorage.removeItem("customerToken");
+        navigate("/customer/auth", { replace: true });
+      }
+    } else {
+      console.log("⚠️ [MOUNT] No customerUser in localStorage, redirecting...");
+      // Give it a moment in case localStorage is still writing
+      setTimeout(() => {
+        const retryStored = localStorage.getItem("customerUser");
+        if (!retryStored) {
+          console.log("⚠️ [MOUNT RETRY] Still no data, redirecting to auth");
+          navigate("/customer/auth", { replace: true });
+        } else {
+          console.log("✅ [MOUNT RETRY] Data found on retry, reloading");
+          window.location.reload();
+        }
+      }, 100);
+    }
+  }, []); // Run only once on mount
+
+  // ============================================================================
+  // FETCH USER PROFILE FROM DATABASE
+  // ============================================================================
   const fetchUserProfile = async () => {
     try {
       const API_URL =
         "https://86605879-7581-472d-a2f1-a4d71a358503-00-1nvtq3qgvln7.pike.replit.dev";
-      const response = await fetch(
+
+      const response = await axios.get(
         `${API_URL}/customer/profile/${customerUser.uid}`
       );
-      const data = await response.json();
 
-      // Update localStorage with complete user data
-      setCustomerUser({
-        ...customerUser,
-        id: data.id,
-        name: data.name,
-        phone_number: data.phone_number,
-      });
+      const completeProfile = {
+        uid: customerUser.uid,
+        id: response.data.id,
+        name: response.data.name,
+        email: response.data.email,
+        phone_number: response.data.phone_number,
+      };
+
+      // Update localStorage with complete profile
+      localStorage.setItem("customerUser", JSON.stringify(completeProfile));
+      setCustomerUser(completeProfile);
+
+      console.log("✅ User profile fetched and updated:", completeProfile);
 
       // Now fetch bookings with the database ID
-      dispatch(fetchCustomerBookings(data.id));
+      dispatch(fetchCustomerBookings(response.data.id));
     } catch (error) {
-      console.error("Failed to fetch user profile:", error);
+      console.error("❌ Failed to fetch user profile:", error);
+    }
+  };
+
+  // ============================================================================
+  // FETCH BOOKINGS ON MOUNT
+  // ============================================================================
+  useEffect(() => {
+    // Prefer in-memory user; fall back to parsed localStorage copy
+    let userId = customerUser?.id;
+    let userToSet = null;
+
+    if (!userId) {
+      const stored = localStorage.getItem("customerUser");
+      if (stored) {
+        try {
+          const parsedUser = JSON.parse(stored);
+          userId = parsedUser?.id;
+          userToSet = parsedUser;
+          console.log("📦 Retrieved user from localStorage:", {
+            id: userId,
+            name: parsedUser?.name,
+            email: parsedUser?.email,
+          });
+        } catch (err) {
+          console.warn("⚠️ Corrupt customerUser in storage, clearing.", err);
+          localStorage.removeItem("customerUser");
+        }
+      }
+    }
+
+    // Update state if we parsed a user from storage
+    if (userToSet && !customerUser) {
+      setCustomerUser(userToSet);
+    }
+
+    if (userId) {
+      // Make sure userId is an integer, not a Firebase UID string
+      const isInteger = Number.isInteger(userId) || /^\d+$/.test(userId);
+
+      if (isInteger) {
+        console.log("✅ Fetching bookings with database ID:", userId);
+        dispatch(fetchCustomerBookings(userId));
+      } else {
+        // userId is a Firebase UID (string), need to fetch the profile first
+        console.log("⚠️ User ID is Firebase UID, fetching database profile...");
+        if (customerUser?.uid) {
+          fetchUserProfile();
+        }
+      }
+    } else if (customerUser?.uid) {
+      // If we have Firebase UID but no database ID, fetch the profile
+      console.log("⚠️ No database ID, fetching profile from backend...");
+      fetchUserProfile();
+    }
+  }, [dispatch, customerUser]);
+
+  // ============================================================================
+  // HANDLE MANUAL REFRESH - User-friendly refresh button
+  // ============================================================================
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      let userId = customerUser?.id;
+      let userToSet = null;
+
+      if (!userId) {
+        const stored = localStorage.getItem("customerUser");
+        if (stored) {
+          try {
+            const parsedUser = JSON.parse(stored);
+            userId = parsedUser?.id;
+            userToSet = parsedUser;
+            console.log("🔄 [REFRESH] Retrieved user from storage:", {
+              id: userId,
+              name: parsedUser?.name,
+            });
+          } catch (err) {
+            console.warn("⚠️ Corrupt customerUser in storage, clearing.", err);
+            localStorage.removeItem("customerUser");
+          }
+        }
+      }
+
+      // Update customerUser state if we found it in localStorage
+      if (userToSet && !customerUser) {
+        console.log("🔄 [REFRESH] Updating customerUser state");
+        setCustomerUser(userToSet);
+      }
+
+      if (userId) {
+        await dispatch(fetchCustomerBookings(userId));
+      } else {
+        console.warn("⚠️ [BUTTON] No customer ID found; skipping refresh.");
+      }
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -87,10 +238,32 @@ export default function CustomerDashboard() {
   // ============================================================================
   const handleCancel = (bookingId) => {
     if (window.confirm("Are you sure you want to cancel this booking?")) {
+      let userId = customerUser?.id;
+      let userToSet = null;
+
+      if (!userId) {
+        const stored = localStorage.getItem("customerUser");
+        if (stored) {
+          try {
+            const parsedUser = JSON.parse(stored);
+            userId = parsedUser?.id;
+            userToSet = parsedUser;
+          } catch (err) {
+            console.warn("⚠️ Corrupt customerUser in storage, clearing.", err);
+            localStorage.removeItem("customerUser");
+          }
+        }
+      }
+
+      // Update customerUser state if we found it in localStorage
+      if (userToSet && !customerUser) {
+        setCustomerUser(userToSet);
+      }
+
       dispatch(
         cancelBooking({
           bookingId,
-          userId: customerUser.id, // Using database ID for bookings
+          userId, // Using database ID for bookings
         })
       );
     }
@@ -102,6 +275,9 @@ export default function CustomerDashboard() {
   const handleLogout = async () => {
     try {
       console.log("🚪 Logging out...");
+
+      // Clear Redux customer state
+      dispatch(resetCustomerState());
 
       // Sign out from Firebase
       await signOut(auth);
@@ -117,7 +293,8 @@ export default function CustomerDashboard() {
     } catch (error) {
       console.error("❌ Logout error:", error);
 
-      // Even if Firebase signOut fails, clear local data
+      // Even if Firebase signOut fails, clear Redux and local data
+      dispatch(resetCustomerState());
       setCustomerUser(null);
       localStorage.removeItem("customerUser");
       navigate("/login");
@@ -168,6 +345,18 @@ export default function CustomerDashboard() {
             <div className="d-flex gap-2">
               <Button variant="primary" onClick={() => navigate("/addBooking")}>
                 + New Booking
+              </Button>
+              <Button
+                variant="outline-info"
+                onClick={handleRefresh}
+                disabled={loading || isRefreshing}
+              >
+                <i
+                  className={`bi bi-arrow-clockwise ${
+                    isRefreshing ? "spin" : ""
+                  }`}
+                ></i>
+                {isRefreshing ? " Refreshing..." : " Refresh"}
               </Button>
               {/* Now calls Firebase logout */}
               <Button variant="outline-secondary" onClick={handleLogout}>
