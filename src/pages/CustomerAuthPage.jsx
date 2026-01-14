@@ -70,7 +70,9 @@ export default function CustomerAuthPage() {
         // Check if this is an admin user - if so, don't redirect
         const adminUser = localStorage.getItem("adminUser");
         if (adminUser) {
-          console.log("🔵 Admin user detected, skipping customer auth redirect");
+          console.log(
+            "🔵 Admin user detected, skipping customer auth redirect"
+          );
           return;
         }
 
