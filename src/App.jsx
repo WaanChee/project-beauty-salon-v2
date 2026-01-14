@@ -1,5 +1,12 @@
 import { Container, Nav, Navbar, Button } from "react-bootstrap";
-import { BrowserRouter, Routes, Route, Outlet, Link } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Outlet,
+  Link,
+  useNavigate,
+} from "react-router-dom";
 import Home from "./pages/Home";
 import AddBooking from "./pages/AddBooking";
 import AuthPage from "./pages/AuthPage";
@@ -10,17 +17,49 @@ import CustomerDashboard from "./pages/CustomerDashboard";
 import CustomerAuthGuard from "./components/CustomerAuthGuard";
 import useLocalStorage from "use-local-storage";
 import { signOut } from "firebase/auth";
+import { auth } from "./config/firebase";
+import { useDispatch } from "react-redux";
+import { resetCustomerState } from "./features/customers/customerSlice";
 
 function Layout() {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  // Normalize any plain-string localStorage entries so useLocalStorage can parse
+  const normalizeStoredValue = (key, fallback) => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    try {
+      return JSON.parse(raw);
+    } catch (err) {
+      try {
+        const normalized = JSON.stringify(raw);
+        localStorage.setItem(key, normalized);
+        return JSON.parse(normalized);
+      } catch (normalizeErr) {
+        console.warn(`⚠️ Clearing corrupt ${key} value`, normalizeErr);
+        localStorage.removeItem(key);
+        return fallback;
+      }
+    }
+  };
+
   const [customerToken, setCustomerToken] = useLocalStorage(
     "customerToken",
-    ""
+    normalizeStoredValue("customerToken", "")
   );
-  const [customerUser, setCustomerUser] = useLocalStorage("customerUser", null);
+  const [customerUser, setCustomerUser] = useLocalStorage(
+    "customerUser",
+    normalizeStoredValue("customerUser", null)
+  );
 
   // Handle customer logout
   const handleCustomerLogout = async () => {
     try {
+      console.log("🚪 Logging out from navbar...");
+
+      // Clear Redux customer state first
+      dispatch(resetCustomerState());
+
       // Sign out from Firebase
       await signOut(auth);
 
@@ -32,14 +71,19 @@ function Layout() {
       setCustomerToken("");
       setCustomerUser(null);
 
-      console.log("✅ Logged out successfully");
+      console.log("✅ Navbar logout successful");
+
+      // Navigate to login page
+      navigate("/login");
     } catch (error) {
-      console.error("❌ Logout error:", error);
+      console.error("❌ Navbar logout error:", error);
       // Force clear even if Firebase signOut fails
+      dispatch(resetCustomerState());
       localStorage.removeItem("customerToken");
       localStorage.removeItem("customerUser");
       setCustomerToken("");
       setCustomerUser(null);
+      navigate("/login");
     }
   };
 
