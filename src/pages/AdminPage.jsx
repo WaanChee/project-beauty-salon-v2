@@ -89,7 +89,10 @@ export default function AdminPage({ handleLogout }) {
           <div className="d-flex justify-content-between align-items-center">
             <h1>Admin - Manage Bookings</h1>
             <div className="d-flex gap-2">
-              <Button variant="primary" onClick={() => navigate("/addBooking")}>
+              <Button
+                variant="primary"
+                onClick={() => navigate("/admin/addBooking")}
+              >
                 + Create New Booking
               </Button>
               <Button
