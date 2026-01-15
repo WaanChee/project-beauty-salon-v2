@@ -57,6 +57,15 @@ export default function AuthPage() {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
+        // Skip verification if this is a customer (prevent 404 errors)
+        const customerToken = localStorage.getItem("customerToken");
+        const customerUser = localStorage.getItem("customerUser");
+
+        if (customerToken || customerUser) {
+          // Customer logged in, don't verify as admin
+          return;
+        }
+
         // Check if user is admin
         try {
           const response = await axios.get(
@@ -71,7 +80,8 @@ export default function AuthPage() {
             navigate("/adminPage");
           }
         } catch (error) {
-          console.error("Admin verification failed:", error);
+          // Completely silent - this fires for customers and non-admin users
+          // No logging needed as it's expected behavior
         }
       }
     });
@@ -255,7 +265,21 @@ export default function AuthPage() {
         }, 1000);
       } catch (verifyError) {
         console.error("Verification error:", verifyError);
-        setError("Could not verify admin status.");
+
+        // 404 means user is not in admins table (likely a customer account)
+        if (verifyError.response?.status === 404) {
+          setError(
+            "This account doesn't have admin privileges. Please use a customer login."
+          );
+          await auth.signOut();
+          setLoading(false);
+          return;
+        }
+
+        setError("Could not verify admin status. Please try again.");
+        await auth.signOut();
+        setLoading(false);
+        return;
       }
     } catch (error) {
       console.error("❌ Login error:", error);
