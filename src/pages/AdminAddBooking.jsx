@@ -235,7 +235,7 @@ export default function AdminAddBooking() {
                     type="text"
                     name="user_name"
                     placeholder="Enter customer's full name"
-                    defaultValue={formData.user_name}
+                    value={formData.user_name}
                     onChange={handleChange}
                     required
                     autoComplete="off"
@@ -248,7 +248,7 @@ export default function AdminAddBooking() {
                     type="email"
                     name="user_email"
                     placeholder="customer@example.com"
-                    defaultValue={formData.user_email}
+                    value={formData.user_email}
                     onChange={handleChange}
                     required
                     autoComplete="off"
@@ -266,7 +266,7 @@ export default function AdminAddBooking() {
                     name="user_phone"
                     inputMode="tel"
                     placeholder="+60123456789"
-                    defaultValue={formData.user_phone}
+                    value={formData.user_phone}
                     onChange={handleChange}
                     required
                     autoComplete="tel-national"
@@ -294,7 +294,7 @@ export default function AdminAddBooking() {
                     type="text"
                     name="title"
                     placeholder="e.g., Haircut, Facial, Manicure"
-                    defaultValue={formData.title}
+                    value={formData.title}
                     onChange={handleChange}
                     required
                     autoComplete="off"
@@ -311,7 +311,7 @@ export default function AdminAddBooking() {
                     rows={3}
                     name="description"
                     placeholder="Add any special requests or notes"
-                    defaultValue={formData.description}
+                    value={formData.description}
                     onChange={handleChange}
                     autoComplete="off"
                   />
@@ -324,7 +324,7 @@ export default function AdminAddBooking() {
                       <Form.Control
                         type="date"
                         name="date"
-                        defaultValue={formData.date}
+                        value={formData.date}
                         onChange={handleChange}
                         required
                         min={new Date().toISOString().split("T")[0]}
@@ -337,7 +337,7 @@ export default function AdminAddBooking() {
                       <Form.Control
                         type="time"
                         name="time"
-                        defaultValue={formData.time}
+                        value={formData.time}
                         onChange={handleChange}
                         required
                         autoComplete="off"
