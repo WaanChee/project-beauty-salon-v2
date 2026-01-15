@@ -74,6 +74,7 @@ const initialState = {
   loading: false, // Loading status
   error: null, // Error message
   successMessage: null, // Success message
+  formResetTrigger: 0, // Trigger to signal form reset to components
 };
 
 // Create the slice
@@ -85,6 +86,10 @@ const bookingSlice = createSlice({
     clearMessages: (state) => {
       state.error = null;
       state.successMessage = null;
+    },
+    // Trigger form reset by incrementing counter
+    triggerFormReset: (state) => {
+      state.formResetTrigger += 1;
     },
   },
   extraReducers: (builder) => {
@@ -114,6 +119,8 @@ const bookingSlice = createSlice({
         state.loading = false;
         state.bookings.push(action.payload);
         state.successMessage = "Booking created successfully!";
+        // Trigger form reset immediately after successful booking
+        state.formResetTrigger += 1;
       })
       .addCase(createBooking.rejected, (state, action) => {
         state.loading = false;
@@ -159,5 +166,5 @@ const bookingSlice = createSlice({
   },
 });
 
-export const { clearMessages } = bookingSlice.actions;
+export const { clearMessages, triggerFormReset } = bookingSlice.actions;
 export default bookingSlice.reducer;
