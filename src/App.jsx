@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 import Home from "./pages/Home";
 import AddBooking from "./pages/AddBooking";
+import AdminAddBooking from "./pages/AdminAddBooking";
 import AuthPage from "./pages/AuthPage";
 import AuthGuard from "./components/AuthGuard";
 import LoginSelector from "./pages/LoginSelector";
@@ -167,6 +168,7 @@ export default function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="addBooking" element={<AddBooking />} />
+          <Route path="admin/addBooking" element={<AdminAddBooking />} />
           <Route path="adminPage" element={<AuthGuard />} />
 
           {/* Customer dashboard - PROTECTED */}
