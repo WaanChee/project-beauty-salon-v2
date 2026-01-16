@@ -55,6 +55,16 @@ export default function AuthPage() {
   // CHECK IF ADMIN IS ALREADY LOGGED IN
   // ============================================================================
   useEffect(() => {
+    // First, check if admin is already authenticated in localStorage
+    const existingToken = localStorage.getItem("adminToken");
+    const existingUser = localStorage.getItem("adminUser");
+
+    if (existingToken && existingUser) {
+      console.log("✅ Admin already logged in, redirecting to admin page");
+      navigate("/adminPage");
+      return;
+    }
+
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
         // Skip verification if this is a customer (prevent 404 errors)
@@ -72,11 +82,26 @@ export default function AuthPage() {
             `${API_URL}/admin/verify/${user.uid}`
           );
           if (response.data.isAdmin) {
-            setAdminUser({
+            // Get Firebase ID token
+            const idToken = await user.getIdToken();
+
+            const adminData = {
               uid: user.uid,
               email: user.email,
               username: response.data.username,
-            });
+            };
+
+            // Store token AND user data
+            localStorage.setItem("adminToken", idToken);
+            localStorage.setItem("adminUser", JSON.stringify(adminData));
+
+            // Also set in state
+            setAdminUser(adminData);
+
+            console.log(
+              "✅ Admin token and user verified from auth state change"
+            );
+
             navigate("/adminPage");
           }
         } catch (error) {
@@ -241,6 +266,10 @@ export default function AuthPage() {
       const user = userCredential.user;
       console.log("✅ Login successful:", user.uid);
 
+      // Get Firebase ID token
+      const idToken = await user.getIdToken();
+      console.log("✅ Firebase token obtained");
+
       // Verify admin status
       try {
         const response = await axios.get(`${API_URL}/admin/verify/${user.uid}`);
@@ -252,17 +281,31 @@ export default function AuthPage() {
           return;
         }
 
-        setAdminUser({
+        const adminData = {
           uid: user.uid,
           email: user.email,
           username: response.data.username,
+        };
+
+        // 🔥 CRITICAL: Store token AND user data - matching customer auth pattern
+        localStorage.setItem("adminToken", idToken);
+        localStorage.setItem("adminUser", JSON.stringify(adminData));
+
+        // Also set in state
+        setAdminUser(adminData);
+
+        console.log("✅ Admin token and data saved to localStorage:", {
+          token: idToken.substring(0, 20) + "...",
+          user: adminData,
         });
+
+        // Dispatch custom event to notify other components of admin status change
+        window.dispatchEvent(new CustomEvent("adminStatusChanged"));
 
         setSuccessMessage("✅ Welcome back, Admin!");
 
-        setTimeout(() => {
-          navigate("/adminPage");
-        }, 1000);
+        // Navigate immediately - no delay needed
+        navigate("/adminPage");
       } catch (verifyError) {
         console.error("Verification error:", verifyError);
 
