@@ -52,67 +52,26 @@ export default function AuthPage() {
   const [fieldErrors, setFieldErrors] = useState({});
 
   // ============================================================================
-  // CHECK IF ADMIN IS ALREADY LOGGED IN
+  // CHECK IF ADMIN IS ALREADY LOGGED IN - SILENT CHECK ONLY (No Auto-Redirect)
   // ============================================================================
   useEffect(() => {
-    // First, check if admin is already authenticated in localStorage
+    // Only check if already logged in, don't auto-redirect
+    // Let the guards handle routing - auth pages should just show forms
     const existingToken = localStorage.getItem("adminToken");
     const existingUser = localStorage.getItem("adminUser");
 
-    if (existingToken && existingUser) {
-      console.log("✅ Admin already logged in, redirecting to admin page");
-      navigate("/adminPage");
-      return;
+    // Check if token is valid (not empty/null) and user data is valid (not null string)
+    const isValidToken = existingToken && existingToken !== "";
+    const isValidUser =
+      existingUser && existingUser !== "null" && existingUser !== "";
+
+    if (isValidToken && isValidUser) {
+      console.log(
+        "✅ Valid admin session already exists - user should use admin page",
+      );
+      // Don't redirect here - let the user navigate manually or guard will handle it
     }
-
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        // Skip verification if this is a customer (prevent 404 errors)
-        const customerToken = localStorage.getItem("customerToken");
-        const customerUser = localStorage.getItem("customerUser");
-
-        if (customerToken || customerUser) {
-          // Customer logged in, don't verify as admin
-          return;
-        }
-
-        // Check if user is admin
-        try {
-          const response = await axios.get(
-            `${API_URL}/admin/verify/${user.uid}`
-          );
-          if (response.data.isAdmin) {
-            // Get Firebase ID token
-            const idToken = await user.getIdToken();
-
-            const adminData = {
-              uid: user.uid,
-              email: user.email,
-              username: response.data.username,
-            };
-
-            // Store token AND user data
-            localStorage.setItem("adminToken", idToken);
-            localStorage.setItem("adminUser", JSON.stringify(adminData));
-
-            // Also set in state
-            setAdminUser(adminData);
-
-            console.log(
-              "✅ Admin token and user verified from auth state change"
-            );
-
-            navigate("/adminPage");
-          }
-        } catch (error) {
-          // Completely silent - this fires for customers and non-admin users
-          // No logging needed as it's expected behavior
-        }
-      }
-    });
-
-    return () => unsubscribe();
-  }, [navigate, setAdminUser, API_URL]);
+  }, []); // Empty dependency array - only run once on mount
 
   // ============================================================================
   // CLEAR MESSAGES
@@ -177,7 +136,7 @@ export default function AuthPage() {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email.trim().toLowerCase(),
-        password
+        password,
       );
 
       const user = userCredential.user;
@@ -240,7 +199,7 @@ export default function AuthPage() {
 
     console.log(
       "🔴 [ADMIN PAGE] handleLogin called at:",
-      new Date().toISOString()
+      new Date().toISOString(),
     );
     console.log("🔴 [ADMIN PAGE] Current URL:", window.location.href);
 
@@ -260,7 +219,7 @@ export default function AuthPage() {
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email.trim().toLowerCase(),
-        password
+        password,
       );
 
       const user = userCredential.user;
@@ -312,7 +271,7 @@ export default function AuthPage() {
         // 404 means user is not in admins table (likely a customer account)
         if (verifyError.response?.status === 404) {
           setError(
-            "This account doesn't have admin privileges. Please use a customer login."
+            "This account doesn't have admin privileges. Please use a customer login.",
           );
           await auth.signOut();
           setLoading(false);
