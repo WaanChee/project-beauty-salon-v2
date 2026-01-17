@@ -10,7 +10,7 @@ import {
   Spinner,
   InputGroup,
 } from "react-bootstrap";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import useLocalStorage from "use-local-storage";
 import {
@@ -25,7 +25,6 @@ import { signOut } from "firebase/auth";
 
 export default function CustomerAuthPage() {
   const navigate = useNavigate();
-  const hasRedirected = useRef(false); // Prevent multiple redirects
 
   // ============================================================================
   // API URL
@@ -57,79 +56,27 @@ export default function CustomerAuthPage() {
   const [fieldErrors, setFieldErrors] = useState({});
 
   // ============================================================================
-  // CHECK IF USER IS ALREADY LOGGED IN (Simplified)
+  // CHECK IF ALREADY LOGGED IN - SILENT CHECK ONLY (No Auto-Redirect)
   // ============================================================================
   useEffect(() => {
-    // Only run once when component mounts
-    if (hasRedirected.current) return;
+    // Only check if already logged in, don't auto-redirect
+    // Let the guards handle routing - auth pages should just show forms
+    const existingToken = localStorage.getItem("customerToken");
+    const existingUser = localStorage.getItem("customerUser");
 
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (user && !hasRedirected.current) {
-        console.log("🔵 Firebase user detected:", user.uid);
+    // Validate token and user (checking for empty/null strings)
+    const isValidToken =
+      existingToken && existingToken !== "" && existingToken !== "null";
+    const isValidUser =
+      existingUser && existingUser !== "null" && existingUser !== "";
 
-        // Check if this is an admin user - if so, don't redirect
-        const adminUser = localStorage.getItem("adminUser");
-        if (adminUser) {
-          console.log(
-            "🔵 Admin user detected, skipping customer auth redirect"
-          );
-          return;
-        }
-
-        // Check if we already have a valid token using direct localStorage
-        const existingToken = localStorage.getItem("customerToken");
-        const existingUser = localStorage.getItem("customerUser");
-
-        if (existingToken && existingUser) {
-          // User is already logged in with complete data, redirect immediately
-          console.log("✅ Complete session found, redirecting...");
-          hasRedirected.current = true;
-          navigate("/customer/dashboard", { replace: true });
-          return;
-        }
-
-        // If token exists but user data is missing, fetch from backend
-        if (existingToken && !existingUser) {
-          try {
-            const response = await axios.get(
-              `${API_URL}/customer/profile/${user.uid}`
-            );
-
-            const userProfile = {
-              uid: user.uid,
-              id: response.data.id,
-              name: response.data.name,
-              email: response.data.email,
-              phone_number: response.data.phone_number,
-            };
-
-            localStorage.setItem("customerUser", JSON.stringify(userProfile));
-            setCustomerUser(userProfile);
-
-            console.log("✅ User data restored from backend");
-            hasRedirected.current = true;
-            navigate("/customer/dashboard", { replace: true });
-          } catch (error) {
-            console.error("Failed to restore user data:", error);
-            // Clear invalid token and force re-login
-            await auth.signOut();
-            localStorage.removeItem("customerToken");
-            localStorage.removeItem("customerUser");
-          }
-          return;
-        }
-
-        // If no token at all, user needs to login (don't redirect)
-        console.log(
-          "⚠️ Firebase user exists but no token - user needs to login"
-        );
-        // Sign out the Firebase user since we don't have a complete session
-        await auth.signOut();
-      }
-    });
-
-    return () => unsubscribe();
-  }, []); // Empty dependency array - only run once
+    if (isValidToken && isValidUser) {
+      console.log(
+        "✅ Valid session already exists - user should use dashboard guard",
+      );
+      // Don't redirect here - let the user navigate manually or guard will handle it
+    }
+  }, []); // Empty dependency array - only run once on mount
 
   // ============================================================================
   // CLEAR MESSAGES AFTER 5 SECONDS
@@ -243,7 +190,7 @@ export default function CustomerAuthPage() {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         formData.email.trim().toLowerCase(),
-        formData.password
+        formData.password,
       );
 
       const user = userCredential.user;
@@ -265,12 +212,12 @@ export default function CustomerAuthPage() {
             name: formData.name.trim(),
             email: formData.email.trim().toLowerCase(),
             phone_number: formData.phone_number.trim(),
-          }
+          },
         );
 
         console.log(
           "✅ User profile created in database:",
-          profileResponse.data
+          profileResponse.data,
         );
       } catch (dbError) {
         console.error("❌ Database profile creation error:", dbError);
@@ -295,7 +242,7 @@ export default function CustomerAuthPage() {
 
           // Don't delete the Firebase user - they can log in
           setError(
-            "An account with this email already exists. Please log in instead."
+            "An account with this email already exists. Please log in instead.",
           );
           setLoading(false);
 
@@ -310,7 +257,7 @@ export default function CustomerAuthPage() {
         // FALLBACK: For other errors, just continue with Firebase-only mode
         console.warn("⚠️ Backend unavailable - using Firebase-only mode");
         console.log(
-          "✅ Continuing with Firebase authentication only (no backend profile)"
+          "✅ Continuing with Firebase authentication only (no backend profile)",
         );
       }
 
@@ -320,7 +267,7 @@ export default function CustomerAuthPage() {
 
       // Success message
       setSuccessMessage(
-        "🎉 Account created successfully! You can now sign in."
+        "🎉 Account created successfully! You can now sign in.",
       );
 
       // Clear form
@@ -375,7 +322,7 @@ export default function CustomerAuthPage() {
 
     console.log(
       "🟢 [CUSTOMER PAGE] handleLogin called at:",
-      new Date().toISOString()
+      new Date().toISOString(),
     );
     console.log("🟢 [CUSTOMER PAGE] Current URL:", window.location.href);
 
@@ -394,7 +341,7 @@ export default function CustomerAuthPage() {
       const userCredential = await signInWithEmailAndPassword(
         auth,
         formData.email.trim().toLowerCase(),
-        formData.password
+        formData.password,
       );
 
       const user = userCredential.user;
@@ -409,14 +356,22 @@ export default function CustomerAuthPage() {
         console.log(`🔍 Fetching profile for UID: ${user.uid}`);
 
         const response = await axios.get(
-          `${API_URL}/customer/profile/${user.uid}`
+          `${API_URL}/customer/profile/${user.uid}`,
         );
 
         console.log("📦 Backend response:", response.data);
 
-        // Validate response data
+        // Validate response data and enforce customer-only login
         if (!response.data || !response.data.id) {
-          throw new Error("Invalid profile data received from backend");
+          throw new Error("CUSTOMER_PROFILE_NOT_FOUND");
+        }
+
+        // If backend returns a role flag, ensure this account is not an admin
+        if (
+          response.data.role &&
+          response.data.role.toLowerCase() !== "customer"
+        ) {
+          throw new Error("NOT_CUSTOMER_ACCOUNT");
         }
 
         const userProfile = {
@@ -451,9 +406,6 @@ export default function CustomerAuthPage() {
 
         setSuccessMessage("✅ Welcome back! Redirecting to your dashboard...");
 
-        // Mark as redirected
-        hasRedirected.current = true;
-
         // Navigate IMMEDIATELY without delay to ensure localStorage is written
         navigate("/customer/dashboard", { replace: true });
       } catch (profileError) {
@@ -464,27 +416,32 @@ export default function CustomerAuthPage() {
           status: profileError.response?.status,
         });
 
-        // FALLBACK: Use Firebase data only (backend unavailable)
-        console.warn("⚠️ Backend profile not found - using Firebase-only mode");
+        // Stop login if no customer profile or role mismatch
+        await signOut(auth);
+        localStorage.removeItem("customerToken");
+        localStorage.removeItem("customerUser");
 
-        const userProfile = {
-          uid: user.uid,
-          id: user.uid, // Use Firebase UID as ID
-          name: user.displayName || user.email.split("@")[0] || "Customer",
-          email: user.email,
-          phone_number: "",
-        };
+        if (
+          profileError.message === "NOT_CUSTOMER_ACCOUNT" ||
+          profileError.response?.data?.role === "admin"
+        ) {
+          setError(
+            "This account is for admins. Please sign in using the admin portal.",
+          );
+        } else if (
+          profileError.message === "CUSTOMER_PROFILE_NOT_FOUND" ||
+          profileError.response?.status === 404
+        ) {
+          setError(
+            "No customer profile found for this account. Please create a customer account to continue.",
+          );
+        } else {
+          setError(
+            "Unable to load your customer profile. Please try again or contact support.",
+          );
+        }
 
-        // Store Firebase-only profile
-        localStorage.setItem("customerToken", idToken);
-        localStorage.setItem("customerUser", JSON.stringify(userProfile));
-        setCustomerUser(userProfile);
-
-        console.log("✅ Logged in with Firebase-only profile:", userProfile);
-
-        setSuccessMessage("✅ Welcome back! (Using Firebase authentication)");
-        hasRedirected.current = true;
-        navigate("/customer/dashboard", { replace: true });
+        return;
       }
     } catch (error) {
       console.error("❌ Login error:", error);
@@ -533,7 +490,7 @@ export default function CustomerAuthPage() {
     try {
       await sendPasswordResetEmail(auth, formData.email.trim().toLowerCase());
       setSuccessMessage(
-        "✅ Password reset email sent! Check your inbox for instructions."
+        "✅ Password reset email sent! Check your inbox for instructions.",
       );
     } catch (error) {
       console.error("Password reset error:", error);
@@ -627,7 +584,7 @@ export default function CustomerAuthPage() {
             Welcome Back!
           </h2>
           <p className="text-muted mb-5">
-            Sign in to manage your salon bookings
+            Sign in to create a booking and manage your salon bookings!
           </p>
 
           {/* Error Message */}
