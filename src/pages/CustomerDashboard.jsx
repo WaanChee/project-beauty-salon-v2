@@ -29,7 +29,7 @@ export default function CustomerDashboard() {
 
   // Get bookings from Redux (still using Redux for bookings management)
   const { bookings, loading, error, successMessage } = useSelector(
-    (state) => state.customer
+    (state) => state.customer,
   );
 
   // Get customer info from localStorage (linked to Firebase)
@@ -50,7 +50,7 @@ export default function CustomerDashboard() {
         if (!parsedUser || !parsedUser.email || !parsedUser.id) {
           console.error(
             "❌ [MOUNT] Invalid user data in localStorage:",
-            parsedUser
+            parsedUser,
           );
           console.log("🗑️ [MOUNT] Clearing corrupt localStorage data...");
 
@@ -69,7 +69,7 @@ export default function CustomerDashboard() {
       } catch (err) {
         console.error(
           "⚠️ [MOUNT] Failed to parse customerUser from localStorage:",
-          err
+          err,
         );
         localStorage.removeItem("customerUser");
         localStorage.removeItem("customerToken");
@@ -111,7 +111,7 @@ export default function CustomerDashboard() {
         "https://86605879-7581-472d-a2f1-a4d71a358503-00-1nvtq3qgvln7.pike.replit.dev";
 
       const response = await axios.get(
-        `${API_URL}/customer/profile/${customerUser.uid}`
+        `${API_URL}/customer/profile/${customerUser.uid}`,
       );
 
       const completeProfile = {
@@ -274,7 +274,7 @@ export default function CustomerDashboard() {
         cancelBooking({
           bookingId,
           userId, // Using database ID for bookings
-        })
+        }),
       );
     }
   };
@@ -292,21 +292,23 @@ export default function CustomerDashboard() {
       // Sign out from Firebase
       await signOut(auth);
 
-      // Clear localStorage
+      // Clear ALL customer authentication data from localStorage
       setCustomerUser(null);
       localStorage.removeItem("customerUser");
+      localStorage.removeItem("customerToken");
 
-      console.log("✅ Logout successful");
+      console.log("✅ Logout successful - all customer data cleared");
 
       // Navigate to login selector
       navigate("/login");
     } catch (error) {
       console.error("❌ Logout error:", error);
 
-      // Even if Firebase signOut fails, clear Redux and local data
+      // Even if Firebase signOut fails, clear Redux and all local data
       dispatch(resetCustomerState());
       setCustomerUser(null);
       localStorage.removeItem("customerUser");
+      localStorage.removeItem("customerToken");
       navigate("/login");
     }
   };
@@ -367,11 +369,6 @@ export default function CustomerDashboard() {
                   }`}
                 ></i>
                 {isRefreshing ? " Refreshing..." : " Refresh"}
-              </Button>
-              {/* Now calls Firebase logout */}
-              <Button variant="outline-secondary" onClick={handleLogout}>
-                <i className="bi bi-box-arrow-right me-2"></i>
-                Logout
               </Button>
             </div>
           </div>
@@ -462,10 +459,10 @@ export default function CustomerDashboard() {
                         booking.status === "Confirmed"
                           ? "linear-gradient(90deg, #28a745, #20c997)"
                           : booking.status === "Cancelled"
-                          ? "linear-gradient(90deg, #dc3545, #fd7e14)"
-                          : booking.status === "Completed"
-                          ? "linear-gradient(90deg, #17a2b8, #007bff)"
-                          : "linear-gradient(90deg, #ffc107, #fd7e14)",
+                            ? "linear-gradient(90deg, #dc3545, #fd7e14)"
+                            : booking.status === "Completed"
+                              ? "linear-gradient(90deg, #17a2b8, #007bff)"
+                              : "linear-gradient(90deg, #ffc107, #fd7e14)",
                     }}
                   ></div>
 
@@ -502,7 +499,7 @@ export default function CustomerDashboard() {
                             year: "numeric",
                             month: "long",
                             day: "numeric",
-                          }
+                          },
                         )}
                       </p>
                     </div>
