@@ -9,39 +9,51 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const [adminUser, setAdminUser] = useState(null);
   const [isChecking, setIsChecking] = useState(true);
+  const [hasChecked, setHasChecked] = useState(false);
 
   // Check for admin authentication
   useEffect(() => {
+    // Prevent multiple checks
+    if (hasChecked) return;
+
     const checkAuth = () => {
       try {
         // Check both token and user data
         const adminToken = localStorage.getItem("adminToken");
         const adminUserData = localStorage.getItem("adminUser");
 
+        // Check if token is valid (not empty/null) and user data is valid (not null string)
+        const isValidToken = adminToken && adminToken !== "";
+        const isValidUser =
+          adminUserData && adminUserData !== "null" && adminUserData !== "";
+
         console.log("🔍 AuthGuard checking:", {
-          hasToken: !!adminToken,
-          hasUser: !!adminUserData,
+          hasToken: isValidToken,
+          hasUser: isValidUser,
         });
 
-        if (adminToken && adminUserData) {
+        if (isValidToken && isValidUser) {
           const user = JSON.parse(adminUserData);
           setAdminUser(user);
           setIsChecking(false);
+          setHasChecked(true);
           console.log("✅ Admin authenticated:", user.email);
         } else {
           console.log("❌ No admin auth found, redirecting to login");
           setIsChecking(false);
-          navigate("/login/admin");
+          setHasChecked(true);
+          navigate("/login/admin", { replace: true });
         }
       } catch (error) {
         console.error("Error checking admin auth:", error);
         setIsChecking(false);
-        navigate("/login/admin");
+        setHasChecked(true);
+        navigate("/login/admin", { replace: true });
       }
     };
 
     checkAuth();
-  }, [navigate]);
+  }, [navigate, hasChecked]);
 
   const handleLogout = async () => {
     try {
