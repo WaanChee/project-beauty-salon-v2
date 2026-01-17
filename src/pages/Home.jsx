@@ -2,6 +2,7 @@ import { Container, Row, Col, Button } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import pic1 from "../assets/images/beauty-salon-pic-1.png";
 import GallerySection from "../components/GallerySection";
+import MapSection from "../components/MapSection";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -62,6 +63,9 @@ export default function Home() {
 
       {/* Gallery Section */}
       <GallerySection />
+
+      {/* Map Section */}
+      <MapSection />
     </>
   );
 }
