@@ -46,11 +46,19 @@ function Layout() {
 
   const [customerToken, setCustomerToken] = useLocalStorage(
     "customerToken",
-    normalizeStoredValue("customerToken", "")
+    normalizeStoredValue("customerToken", ""),
   );
   const [customerUser, setCustomerUser] = useLocalStorage(
     "customerUser",
-    normalizeStoredValue("customerUser", null)
+    normalizeStoredValue("customerUser", null),
+  );
+  const [adminUser, setAdminUser] = useLocalStorage(
+    "adminUser",
+    normalizeStoredValue("adminUser", null),
+  );
+  const [adminToken, setAdminToken] = useLocalStorage(
+    "adminToken",
+    normalizeStoredValue("adminToken", ""),
   );
 
   // Handle customer logout
@@ -102,9 +110,16 @@ function Layout() {
           {/* Collapsible nav - use me-auto to push next element to the right */}
           <Navbar.Collapse id="main-nav">
             <Nav className="me-auto">
-              <Nav.Link as={Link} to="/addBooking">
-                Book a salon
-              </Nav.Link>
+              {/* BOOK A SALON - Routes based on who's logged in */}
+              {adminUser ? (
+                <Nav.Link as={Link} to="/admin/addBooking">
+                  Book a salon
+                </Nav.Link>
+              ) : (
+                <Nav.Link as={Link} to="/addBooking">
+                  Book a salon
+                </Nav.Link>
+              )}
               {/* add more left-side links here if needed */}
 
               {/* SHOW "My Bookings" if customer is logged in */}
@@ -117,30 +132,52 @@ function Layout() {
 
             {/* Right-side area: login button */}
             <div className="d-flex gap-2">
-              {/* IF customer is logged in, show their name and logout */}
-              {customerToken ? (
+              {/* IF admin is logged in, show logout */}
+              {adminUser && typeof adminUser === "object" ? (
                 <>
                   <span className="navbar-text me-2">
-                    👋 {customerUser?.name}
+                    👨‍💼 {adminUser?.username || "Admin"}
                   </span>
                   <Button
-                    variant="outline-primary"
+                    variant="outline-danger"
                     size="sm"
-                    onClick={handleCustomerLogout}
+                    onClick={() => {
+                      setAdminUser(null);
+                      setAdminToken("");
+                      navigate("/login");
+                    }}
                   >
                     Logout
                   </Button>
                 </>
               ) : (
-                <Button
-                  as={Link}
-                  to="/login"
-                  variant="dark"
-                  size="sm"
-                  style={{ fontSize: "16px", minWidth: "75px" }}
-                >
-                  Login
-                </Button>
+                <>
+                  {/* IF customer is logged in, show their name and logout */}
+                  {customerToken ? (
+                    <>
+                      <span className="navbar-text me-2">
+                        👋 {customerUser?.name}
+                      </span>
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={handleCustomerLogout}
+                      >
+                        Logout
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      as={Link}
+                      to="/login"
+                      variant="dark"
+                      size="sm"
+                      style={{ fontSize: "16px", minWidth: "75px" }}
+                    >
+                      Login
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </Navbar.Collapse>
