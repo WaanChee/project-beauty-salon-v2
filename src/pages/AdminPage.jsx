@@ -22,7 +22,7 @@ export default function AdminPage({ handleLogout }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { bookings, loading, error, successMessage } = useSelector(
-    (state) => state.bookings
+    (state) => state.bookings,
   );
 
   // State for edit modal
@@ -106,10 +106,6 @@ export default function AdminPage({ handleLogout }) {
                     isRefreshing ? "spin" : ""
                   }`}
                 ></i>
-              </Button>
-              <Button variant="outline-secondary" onClick={handleLogout}>
-                <i className="bi bi-box-arrow-right me-2"></i>
-                Logout
               </Button>
             </div>
           </div>
