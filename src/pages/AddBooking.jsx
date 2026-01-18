@@ -384,13 +384,12 @@ export default function AddBooking() {
             {/* ================================================================ */}
             {/* SUBMIT & CLEAR BUTTONS */}
             {/* ================================================================ */}
-            <div className="d-flex gap-3 mb-3">
+            <div className="d-flex gap-2 flex-wrap mb-3">
               <Button
                 variant="primary"
                 type="submit"
                 disabled={loading}
-                className="flex-grow-1"
-                size="lg"
+                size="sm"
               >
                 {loading ? "Creating Booking..." : "Confirm Booking"}
               </Button>
@@ -398,7 +397,7 @@ export default function AddBooking() {
                 variant="outline-secondary"
                 type="button"
                 disabled={loading}
-                size="lg"
+                size="sm"
                 onClick={() => {
                   // Clear booking details AND phone number
                   setFormData((prev) => ({
