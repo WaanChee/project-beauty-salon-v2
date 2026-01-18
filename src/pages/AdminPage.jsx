@@ -86,11 +86,12 @@ export default function AdminPage({ handleLogout }) {
     <Container className="mt-4">
       <Row className="mb-4">
         <Col>
-          <div className="d-flex justify-content-between align-items-center">
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <h1>Admin - Manage Bookings</h1>
-            <div className="d-flex gap-2">
+            <div className="d-flex gap-2 flex-wrap">
               <Button
                 variant="primary"
+                size="sm"
                 onClick={() => navigate("/admin/addBooking")}
               >
                 + Create New Booking
