@@ -354,12 +354,17 @@ export default function CustomerDashboard() {
                 Welcome back, {customerUser?.name || "Guest"}!
               </p>
             </div>
-            <div className="d-flex gap-2">
-              <Button variant="primary" onClick={() => navigate("/addBooking")}>
+            <div className="d-flex gap-2 flex-wrap">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => navigate("/addBooking")}
+              >
                 + New Booking
               </Button>
               <Button
                 variant="outline-info"
+                size="sm"
                 onClick={handleRefresh}
                 disabled={loading || isRefreshing}
               >
