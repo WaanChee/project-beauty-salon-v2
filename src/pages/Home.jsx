@@ -19,51 +19,21 @@ export default function Home() {
 
   return (
     <>
-      <Container fluid="lg">
-        <div
-          className="hero-section"
-          style={{
-            backgroundImage: `url(${pic1})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            height: "580px",
-            borderRadius: "12px",
-            position: "relative",
-          }}
-        >
-          <div
-            style={{
-              position: "x",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: "rgba(0,0,0,0.4)",
-            }}
-          />
-
-          <Container className="h-100 position-relative">
-            <Row className="h-100 align-items-center">
-              <Col md={7}>
-                <div
-                  style={{
-                    background: "transparent",
-                    padding: "2px",
-                    borderRadius: "8px",
-                  }}
-                >
-                  <h1>Simple Salon Booking System</h1>
-                  <p className="text-muted mb-4">
-                    Book haircuts and beauty services easily. No queues. No
-                    confusion.
-                  </p>
-                  <Button variant="dark" onClick={routeToBooking}>
-                    Create Booking
-                  </Button>
-                </div>
-              </Col>
-            </Row>
-          </Container>
+      <Container fluid="xl" className="py-4">
+        <div className="hero-shell" style={{ backgroundImage: `url(${pic1})` }}>
+          <div className="hero-overlay" />
+          <div className="hero-inner">
+            <p className="hero-eyebrow">Nova Grace Salon</p>
+            <h1 className="hero-title">Simple Salon Booking System</h1>
+            <p className="hero-subtitle">
+              Book haircuts and beauty services easily. No queues. No confusion.
+            </p>
+            <div className="hero-actions">
+              <Button variant="dark" onClick={routeToBooking}>
+                Create Booking
+              </Button>
+            </div>
+          </div>
         </div>
       </Container>
 
