@@ -15,6 +15,7 @@ import {
   clearMessages,
   fetchBookings,
 } from "../features/bookings/bookingSlice";
+import { useCustomerStatus } from "../hooks/useCustomerStatus";
 
 export default function AddBooking() {
   const dispatch = useDispatch();
@@ -27,63 +28,50 @@ export default function AddBooking() {
 
   // Redux state
   const { loading, error, successMessage, formResetTrigger } = useSelector(
-    (state) => state.bookings
+    (state) => state.bookings,
   );
 
   // ============================================================================
-  // AUTH STATE - Customer Only (No admin allowed)
+  // AUTH STATE - Customer Only (using centralized hook)
   // ============================================================================
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [customerUser, setCustomerUser] = useState(null);
+  const {
+    isAuthenticated,
+    customerUser,
+    isLoading: isAuthLoading,
+  } = useCustomerStatus();
   const [isFetchingProfile, setIsFetchingProfile] = useState(false);
   const [hasPrefilledForm, setHasPrefilledForm] = useState(false);
   const [formResetKey, setFormResetKey] = useState(0);
+  const [formError, setError] = useState(null);
 
   // Check authentication on mount - Customer Only
   useEffect(() => {
-    const token = localStorage.getItem("customerToken");
-    const userJson = localStorage.getItem("customerUser");
-
     console.log("🔵 AddBooking Auth Check (Customer Only):", {
-      hasToken: !!token,
-      hasUser: !!userJson,
+      isAuthenticated,
+      isAuthLoading,
     });
 
-    if (!token || !userJson) {
+    if (!isAuthLoading && !isAuthenticated) {
       console.log("❌ Not authenticated as customer, redirecting...");
       navigate("/customer/auth", { replace: true });
       return;
     }
 
-    try {
-      const user = JSON.parse(userJson);
-
-      // Verify user object has required properties
-      if (!user || !user.email) {
-        console.log("❌ Invalid user data:", user);
-        localStorage.removeItem("customerToken");
-        localStorage.removeItem("customerUser");
-        navigate("/customer/auth", { replace: true });
-        return;
-      }
-
-      setCustomerUser(user);
-      setIsAuthenticated(true);
-
+    if (customerUser) {
       // If user has ID, we're good
-      if (user.id) {
-        console.log("✅ Customer authenticated:", user.email, "| ID:", user.id);
-      } else if (user.uid) {
+      if (customerUser.id) {
+        console.log(
+          "✅ Customer authenticated:",
+          customerUser.email,
+          "| ID:",
+          customerUser.id,
+        );
+      } else if (customerUser.uid) {
         console.log("⏳ User has Firebase UID, fetching database profile...");
-        fetchUserProfile(user.uid);
+        fetchUserProfile(customerUser.uid);
       }
-    } catch (error) {
-      console.error("❌ Failed to parse user data:", error);
-      localStorage.removeItem("customerToken");
-      localStorage.removeItem("customerUser");
-      navigate("/customer/auth", { replace: true });
     }
-  }, [navigate]);
+  }, [isAuthenticated, isAuthLoading, customerUser, navigate]);
 
   // Fetch user profile from backend to get database ID
   const fetchUserProfile = async (firebaseUid) => {
@@ -92,7 +80,7 @@ export default function AddBooking() {
       const API_URL =
         "https://86605879-7581-472d-a2f1-a4d71a358503-00-1nvtq3qgvln7.pike.replit.dev";
       const response = await fetch(
-        `${API_URL}/customer/profile/${firebaseUid}`
+        `${API_URL}/customer/profile/${firebaseUid}`,
       );
 
       if (!response.ok) {
@@ -101,7 +89,7 @@ export default function AddBooking() {
 
       const profileData = await response.json();
 
-      // Update customerUser with complete data
+      // Update customerUser with complete data in localStorage
       const completeUser = {
         ...customerUser,
         id: profileData.id,
@@ -110,13 +98,12 @@ export default function AddBooking() {
       };
 
       localStorage.setItem("customerUser", JSON.stringify(completeUser));
-      setCustomerUser(completeUser);
 
       console.log(
         "✅ User profile fetched and authenticated:",
         completeUser.email,
         "| ID:",
-        completeUser.id
+        completeUser.id,
       );
     } catch (error) {
       console.error("❌ Failed to fetch user profile:", error);
@@ -460,7 +447,7 @@ export default function AddBooking() {
                     time: "",
                   }));
                   console.log(
-                    "🔄 Form reset (booking details cleared, phone cleared)"
+                    "🔄 Form reset (booking details cleared, phone cleared)",
                   );
                 }}
               >
