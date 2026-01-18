@@ -1,38 +1,60 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+
+// Keys used in localStorage for admin authentication state
+const ADMIN_USER_KEY = "adminUser";
+const ADMIN_TOKEN_KEY = "adminToken";
 
 /**
- * Custom hook to check if admin is logged in
- * Uses direct localStorage access and listens for changes
+ * useAdminStatus
+ * - Centralized, robust admin auth state derived from localStorage
+ * - Listens to storage changes and a custom "adminStatusChanged" event
+ * - Exposes helpers for refresh and logout to keep usage consistent
  */
 export const useAdminStatus = () => {
-  const [isAdmin, setIsAdmin] = useState(false);
   const [adminUser, setAdminUser] = useState(null);
+  const [hasToken, setHasToken] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const checkAdmin = useCallback(() => {
+    setIsLoading(true);
+    try {
+      const userJson = localStorage.getItem(ADMIN_USER_KEY);
+      const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+
+      const tokenValid = !!token && token !== "null" && token !== "";
+      setHasToken(tokenValid);
+
+      if (userJson) {
+        const parsed = JSON.parse(userJson);
+        // Consider admin valid if user has any of these identifiers
+        const validUser =
+          parsed &&
+          (parsed.uid || parsed.email || parsed.username || parsed.name);
+
+        if (validUser) {
+          setAdminUser(parsed);
+        } else {
+          setAdminUser(null);
+        }
+      } else {
+        setAdminUser(null);
+      }
+    } catch (err) {
+      console.error("Error checking admin status:", err);
+      setAdminUser(null);
+      setHasToken(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     // Initial check
-    const checkAdmin = () => {
-      try {
-        const adminUserData = localStorage.getItem("adminUser");
-        if (adminUserData) {
-          const admin = JSON.parse(adminUserData);
-          setAdminUser(admin);
-          setIsAdmin(!!admin && !!admin.uid);
-        } else {
-          setAdminUser(null);
-          setIsAdmin(false);
-        }
-      } catch (err) {
-        console.error("Error checking admin status:", err);
-        setAdminUser(null);
-        setIsAdmin(false);
-      }
-    };
-
     checkAdmin();
 
     // Listen for localStorage changes from other tabs/windows
     const handleStorageChange = (e) => {
-      if (e.key === "adminUser") {
+      if (e.key === ADMIN_USER_KEY || e.key === ADMIN_TOKEN_KEY) {
         checkAdmin();
       }
     };
@@ -49,7 +71,31 @@ export const useAdminStatus = () => {
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("adminStatusChanged", handleCustomEvent);
     };
+  }, [checkAdmin]);
+
+  const logoutAdmin = useCallback(() => {
+    try {
+      localStorage.removeItem(ADMIN_TOKEN_KEY);
+      localStorage.removeItem(ADMIN_USER_KEY);
+      setAdminUser(null);
+      setHasToken(false);
+      // Notify listeners to refresh their state
+      window.dispatchEvent(new CustomEvent("adminStatusChanged"));
+    } catch (err) {
+      console.error("Error during admin logout:", err);
+    }
   }, []);
 
-  return { isAdmin, adminUser };
+  const isAdmin =
+    !!adminUser && !!(adminUser.uid || adminUser.email || adminUser.username);
+  const isAuthenticated = isAdmin && hasToken;
+
+  return {
+    isAdmin,
+    isAuthenticated,
+    adminUser,
+    isLoading,
+    refresh: checkAdmin,
+    logoutAdmin,
+  };
 };
