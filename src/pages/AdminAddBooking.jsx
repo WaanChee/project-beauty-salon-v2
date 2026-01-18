@@ -15,6 +15,7 @@ import {
   clearMessages,
   fetchBookings,
 } from "../features/bookings/bookingSlice";
+import { useAdminStatus } from "../hooks/useAdminStatus";
 
 export default function AdminAddBooking() {
   const dispatch = useDispatch();
@@ -26,42 +27,22 @@ export default function AdminAddBooking() {
 
   // Redux state
   const { loading, error, successMessage, formResetTrigger } = useSelector(
-    (state) => state.bookings
+    (state) => state.bookings,
   );
 
   // ============================================================================
-  // AUTH STATE - Admin Only
+  // AUTH STATE - Admin Only (centralized via useAdminStatus)
   // ============================================================================
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [adminUser, setAdminUser] = useState(null);
+  const { isAuthenticated, adminUser, isLoading } = useAdminStatus();
   const [formResetKey, setFormResetKey] = useState(0);
 
-  // Check admin authentication on mount
+  // Redirect to admin login if not authenticated
   useEffect(() => {
-    const adminUserJson = localStorage.getItem("adminUser");
-
-    if (!adminUserJson) {
+    if (!isLoading && !isAuthenticated) {
       console.log("❌ Not authenticated as admin, redirecting...");
       navigate("/login/admin", { replace: true });
-      return;
     }
-
-    try {
-      const parsedAdmin = JSON.parse(adminUserJson);
-      if (!parsedAdmin || (!parsedAdmin.email && !parsedAdmin.username)) {
-        console.log("❌ Invalid admin data");
-        navigate("/login/admin", { replace: true });
-        return;
-      }
-
-      setAdminUser(parsedAdmin);
-      setIsAuthenticated(true);
-      console.log("✅ Admin authenticated:", parsedAdmin.username);
-    } catch (err) {
-      console.error("Failed to parse admin user:", err);
-      navigate("/login/admin", { replace: true });
-    }
-  }, [navigate]);
+  }, [isLoading, isAuthenticated, navigate]);
 
   // ============================================================================
   // FORM STATE - For admin to create bookings for customers
@@ -160,7 +141,7 @@ export default function AdminAddBooking() {
   }, [error, successMessage, dispatch]);
 
   // Don't render until authenticated
-  if (!isAuthenticated || !adminUser) {
+  if (isLoading || !isAuthenticated || !adminUser) {
     return null;
   }
 
@@ -215,8 +196,9 @@ export default function AdminAddBooking() {
               </Card.Header>
               <Card.Body>
                 <p className="mb-0">
-                  <strong>Admin:</strong> {adminUser.username} (
-                  {adminUser.email})
+                  <strong>Admin:</strong>{" "}
+                  {adminUser.username || adminUser.email || adminUser.uid} (
+                  {adminUser.email || ""})
                 </p>
               </Card.Body>
             </Card>
