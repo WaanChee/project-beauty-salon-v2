@@ -3,12 +3,18 @@ import { useNavigate } from "react-router-dom";
 import pic1 from "../assets/images/beauty-salon-pic-1.png";
 import GallerySection from "../components/GallerySection";
 import MapSection from "../components/MapSection";
+import { useAdminStatus } from "../hooks/useAdminStatus";
 
 export default function Home() {
   const navigate = useNavigate();
+  const { isAuthenticated: isAdminLoggedIn } = useAdminStatus();
 
   const routeToBooking = () => {
-    navigate("/AddBooking");
+    if (isAdminLoggedIn) {
+      navigate("/admin/addBooking");
+    } else {
+      navigate("/addBooking");
+    }
   };
 
   return (
