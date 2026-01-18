@@ -133,10 +133,15 @@ export default function EditBookingModal({
 
           {/* Buttons */}
           <div className="d-flex justify-content-end gap-2">
-            <Button variant="secondary" onClick={onHide}>
+            <Button variant="secondary" size="sm" onClick={onHide}>
               Cancel
             </Button>
-            <Button variant="primary" type="submit" disabled={loading}>
+            <Button
+              variant="primary"
+              type="submit"
+              size="sm"
+              disabled={loading}
+            >
               {loading ? "Saving..." : "Save Changes"}
             </Button>
           </div>
