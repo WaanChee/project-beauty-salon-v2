@@ -152,10 +152,11 @@ export default function AdminAddBooking() {
     <Container className="mt-5">
       <Row className="justify-content-center">
         <Col md={8}>
-          <div className="d-flex justify-content-between align-items-center mb-4">
+          <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <h1>Create Booking (Admin)</h1>
             <Button
               variant="outline-secondary"
+              size="sm"
               onClick={() => navigate("/adminPage")}
             >
               ← Back to Admin Dashboard
@@ -333,13 +334,12 @@ export default function AdminAddBooking() {
             {/* ================================================================ */}
             {/* SUBMIT BUTTON */}
             {/* ================================================================ */}
-            <div className="d-flex gap-3 mb-3">
+            <div className="d-flex gap-2 flex-wrap mb-3">
               <Button
                 variant="primary"
                 type="submit"
                 disabled={loading}
-                className="flex-grow-1"
-                size="lg"
+                size="sm"
               >
                 {loading ? "Creating Booking..." : "✅ Create Booking"}
               </Button>
@@ -347,7 +347,7 @@ export default function AdminAddBooking() {
                 variant="outline-secondary"
                 type="button"
                 disabled={loading}
-                size="lg"
+                size="sm"
                 onClick={() => {
                   setFormData({
                     user_name: "",
