@@ -122,6 +122,13 @@ function Layout() {
               )}
               {/* add more left-side links here if needed */}
 
+              {/* SHOW "Manage Bookings" if admin is logged in */}
+              {adminUser && (
+                <Nav.Link as={Link} to="/adminPage">
+                  Manage Bookings
+                </Nav.Link>
+              )}
+
               {/* SHOW "My Bookings" if customer is logged in */}
               {customerToken && (
                 <Nav.Link as={Link} to="/customer/dashboard">
