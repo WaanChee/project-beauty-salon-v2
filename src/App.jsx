@@ -98,8 +98,8 @@ function Layout() {
 
   return (
     <>
-      <Navbar bg="light" variant="light">
-        <Container>
+      <Navbar bg="light" variant="light" expand="lg" className="app-navbar">
+        <Container fluid="xl">
           <Navbar.Brand href="/" style={{ fontWeight: "bold" }}>
             Nova Grace!
           </Navbar.Brand>
@@ -120,7 +120,6 @@ function Layout() {
                   Book a salon
                 </Nav.Link>
               )}
-              {/* add more left-side links here if needed */}
 
               {/* SHOW "Manage Bookings" if admin is logged in */}
               {adminUser && (
@@ -138,7 +137,7 @@ function Layout() {
             </Nav>
 
             {/* Right-side area: login button */}
-            <div className="d-flex gap-2">
+            <div className="d-flex gap-2 align-items-center">
               {/* IF admin is logged in, show logout */}
               {adminUser && typeof adminUser === "object" ? (
                 <>
@@ -174,13 +173,7 @@ function Layout() {
                       </Button>
                     </>
                   ) : (
-                    <Button
-                      as={Link}
-                      to="/login"
-                      variant="dark"
-                      size="sm"
-                      style={{ fontSize: "16px", minWidth: "75px" }}
-                    >
+                    <Button as={Link} to="/login" variant="dark" size="sm">
                       Login
                     </Button>
                   )}
