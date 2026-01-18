@@ -23,7 +23,7 @@ import { useAdminStatus } from "../hooks/useAdminStatus";
 export default function GallerySection() {
   const dispatch = useDispatch();
   const { images, loading, error, successMessage } = useSelector(
-    (state) => state.gallery
+    (state) => state.gallery,
   );
 
   // Check if user is admin using custom hook
@@ -90,7 +90,7 @@ export default function GallerySection() {
         id: selectedImage.id,
         title,
         description,
-      })
+      }),
     );
     handleCloseEditModal();
   };
@@ -99,11 +99,11 @@ export default function GallerySection() {
   const handleDeleteImage = async (image) => {
     if (
       window.confirm(
-        "Are you sure you want to delete this image? This action cannot be undone."
+        "Are you sure you want to delete this image? This action cannot be undone.",
       )
     ) {
       await dispatch(
-        deleteGalleryImage({ id: image.id, storagePath: image.storagePath })
+        deleteGalleryImage({ id: image.id, storagePath: image.storagePath }),
       );
     }
   };
@@ -148,7 +148,7 @@ export default function GallerySection() {
       {/* Header */}
       <Row className="mb-4">
         <Col>
-          <div className="d-flex justify-content-between align-items-center">
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
               <h2>Gallery</h2>
               <p className="text-muted">
@@ -156,7 +156,11 @@ export default function GallerySection() {
               </p>
             </div>
             {isAdmin && (
-              <Button variant="primary" onClick={() => setShowAddModal(true)}>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setShowAddModal(true)}
+              >
                 + Add Image
               </Button>
             )}
@@ -197,7 +201,11 @@ export default function GallerySection() {
         <div className="text-center py-5">
           <p className="text-muted">No images in the gallery yet.</p>
           {isAdmin && (
-            <Button variant="primary" onClick={() => setShowAddModal(true)}>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setShowAddModal(true)}
+            >
               Add Your First Image
             </Button>
           )}
@@ -329,11 +337,12 @@ export default function GallerySection() {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseAddModal}>
+          <Button variant="secondary" size="sm" onClick={handleCloseAddModal}>
             Cancel
           </Button>
           <Button
             variant="primary"
+            size="sm"
             onClick={handleAddImage}
             disabled={loading || !file}
           >
@@ -399,11 +408,12 @@ export default function GallerySection() {
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseEditModal}>
+          <Button variant="secondary" size="sm" onClick={handleCloseEditModal}>
             Cancel
           </Button>
           <Button
             variant="primary"
+            size="sm"
             onClick={handleEditImage}
             disabled={loading}
           >
