@@ -21,8 +21,6 @@ export default function AddBooking() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Ref for phone input to force clear it
-  const phoneInputRef = useRef(null);
   // Ref for the entire form to reset it
   const formRef = useRef(null);
 
@@ -39,10 +37,8 @@ export default function AddBooking() {
     customerUser,
     isLoading: isAuthLoading,
   } = useCustomerStatus();
-  const [isFetchingProfile, setIsFetchingProfile] = useState(false);
   const [hasPrefilledForm, setHasPrefilledForm] = useState(false);
   const [formResetKey, setFormResetKey] = useState(0);
-  const [formError, setError] = useState(null);
 
   // Check authentication on mount - Customer Only
   useEffect(() => {
@@ -75,7 +71,6 @@ export default function AddBooking() {
 
   // Fetch user profile from backend to get database ID
   const fetchUserProfile = async (firebaseUid) => {
-    setIsFetchingProfile(true);
     try {
       const API_URL =
         "https://86605879-7581-472d-a2f1-a4d71a358503-00-1nvtq3qgvln7.pike.replit.dev";
@@ -107,10 +102,6 @@ export default function AddBooking() {
       );
     } catch (error) {
       console.error("❌ Failed to fetch user profile:", error);
-      // Still allow form, but warn user
-      setError("Could not load your profile. Continuing anyway...");
-    } finally {
-      setIsFetchingProfile(false);
     }
   };
 
@@ -181,36 +172,10 @@ export default function AddBooking() {
   }, [formResetTrigger, customerUser]);
 
   // ============================================================================
-  // HELPER: Get user info (handles both admin and customer)
-  // ============================================================================
-  const getUserDisplayName = () => {
-    if (!customerUser) return "";
-    return customerUser.name || customerUser.username || "";
-  };
-
-  const getUserDisplayEmail = () => {
-    return customerUser?.email || "";
-  };
-
-  const getUserDisplayPhone = () => {
-    return customerUser?.phone_number || "";
-  };
-
-  // ============================================================================
   // HANDLE INPUT CHANGES
   // ============================================================================
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    // Validate phone number - only allow digits, spaces, +, -, and ()
-    if (name === "user_phone") {
-      // Allow only numbers, +, spaces, -, and () for phone formatting
-      const phoneRegex = /^[\d\s+\-()]*$/;
-      if (!phoneRegex.test(value)) {
-        console.log("❌ Invalid phone input rejected:", value);
-        return; // Don't update if invalid characters
-      }
-    }
 
     setFormData({
       ...formData,
@@ -305,7 +270,6 @@ export default function AddBooking() {
                     type="text"
                     name="user_name"
                     value={formData.user_name}
-                    onChange={handleChange}
                     required
                     readOnly
                     disabled
@@ -322,7 +286,6 @@ export default function AddBooking() {
                     type="email"
                     name="user_email"
                     value={formData.user_email}
-                    onChange={handleChange}
                     required
                     readOnly
                     disabled
