@@ -96,9 +96,6 @@ const MapSection = () => {
           <i className="bi bi-geo-alt-fill me-2"></i>
           123 Beauty Street, New York, NY 10001
         </p>
-        <small className="text-muted">
-          💡 Click the red pin on the map for directions
-        </small>
       </div>
     </Container>
   );
