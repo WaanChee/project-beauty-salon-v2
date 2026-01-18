@@ -14,7 +14,7 @@ const MapSection = () => {
 
   const containerStyle = {
     width: "100%",
-    height: "450px",
+    height: "100%",
     borderRadius: "12px",
   };
 
@@ -89,7 +89,7 @@ const MapSection = () => {
         </p>
       </div>
 
-      <div ref={mapRef} style={containerStyle} />
+      <div ref={mapRef} style={containerStyle} className="map-frame" />
 
       <div className="text-center mt-3">
         <p className="text-muted mb-2">
