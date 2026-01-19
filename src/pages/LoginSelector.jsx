@@ -23,78 +23,81 @@ export default function LoginSelector() {
     <Container fluid className="p-0" style={{ minHeight: "100vh" }}>
       <Row className="g-0" style={{ minHeight: "100vh" }}>
         {/* Left Side - Hero */}
-        <Col lg={6} className="d-none d-lg-flex p-0">
+        <Col
+          lg={6}
+          className="d-none d-lg-flex p-0 position-relative overflow-hidden"
+        >
           <div
             style={{
-              position: "relative",
-              width: "100%",
+              position: "absolute",
+              inset: 0,
               backgroundImage: `url(${pic2})`,
               backgroundSize: "cover",
               backgroundPosition: "center",
-              backgroundAttachment: "fixed",
+              backgroundRepeat: "no-repeat",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(135deg, rgba(15, 23, 42, 0.72) 0%, rgba(15, 23, 42, 0.45) 50%, rgba(15, 23, 42, 0.25) 100%)",
+              backdropFilter: "blur(1px)",
+            }}
+          />
+          <div
+            style={{
+              position: "relative",
+              zIndex: 2,
               display: "flex",
-              alignItems: "center",
+              flexDirection: "column",
               justifyContent: "center",
-              overflow: "hidden",
+              padding: "60px 50px",
+              height: "100%",
+              maxWidth: "550px",
             }}
           >
-            {/* Dark overlay for text contrast */}
-            <div
+            <p
               style={{
-                position: "absolute",
-                inset: 0,
-                background:
-                  "linear-gradient(135deg, rgba(15, 23, 42, 0.35) 0%, rgba(15, 23, 42, 0.15) 100%)",
-                zIndex: 1,
-              }}
-            />
-
-            {/* Content */}
-            <div
-              style={{
-                position: "relative",
-                zIndex: 2,
-                maxWidth: "500px",
-                padding: "60px 40px",
-                textAlign: "left",
-                color: "#f8fafc",
+                textTransform: "uppercase",
+                letterSpacing: "0.15em",
+                fontSize: "11px",
+                fontWeight: "700",
+                color: "#93c5fd",
+                margin: "0 0 20px 0",
+                textShadow: "0 2px 8px rgba(0, 0, 0, 0.3)",
               }}
             >
-              <p
-                style={{
-                  textTransform: "uppercase",
-                  letterSpacing: "0.12em",
-                  fontSize: "12px",
-                  fontWeight: "700",
-                  color: "#cdd7ff",
-                  margin: "0 0 12px 0",
-                }}
-              >
-                Nova Grace Salon
-              </p>
-              <h1
-                style={{
-                  fontSize: "clamp(32px, 5vw, 48px)",
-                  fontWeight: "700",
-                  margin: "0 0 16px 0",
-                  lineHeight: "1.2",
-                  color: "#f8fafc",
-                }}
-              >
-                Choose Your Login Type
-              </h1>
-              <p
-                style={{
-                  fontSize: "16px",
-                  lineHeight: "1.6",
-                  color: "#e2e8f0",
-                  margin: 0,
-                }}
-              >
-                Select whether you want to access as a customer or an
-                administrator to continue.
-              </p>
-            </div>
+              Nova Grace Salon
+            </p>
+            <h1
+              style={{
+                fontSize: "clamp(36px, 5vw, 52px)",
+                fontWeight: "700",
+                margin: "0 0 24px 0",
+                lineHeight: "1.15",
+                color: "#ffffff",
+                textShadow:
+                  "0 12px 32px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.3)",
+                letterSpacing: "-0.5px",
+              }}
+            >
+              Choose Your Login Type
+            </h1>
+            <p
+              style={{
+                fontSize: "17px",
+                lineHeight: "1.7",
+                color: "#e0e7ff",
+                textShadow: "0 4px 12px rgba(0, 0, 0, 0.35)",
+                margin: 0,
+                fontWeight: "500",
+              }}
+            >
+              Select whether you want to access as a customer or an
+              administrator to continue.
+            </p>
           </div>
         </Col>
 
@@ -127,36 +130,6 @@ export default function LoginSelector() {
                 How would you like to sign in?
               </p>
             </div>
-
-            {/* Status message */}
-            {selectedRole && (
-              <div
-                className="d-flex align-items-center border-0 p-4 mb-4"
-                style={{
-                  backgroundColor: "#eff6ff",
-                  color: "#1e40af",
-                  borderRadius: "12px",
-                }}
-              >
-                <Spinner
-                  animation="border"
-                  size="sm"
-                  className="me-3"
-                  style={{
-                    color: "#3b82f6",
-                    "--bs-spinner-width": "1.25rem",
-                    "--bs-spinner-height": "1.25rem",
-                  }}
-                />
-                <span style={{ fontSize: "0.9rem", fontWeight: "500" }}>
-                  Signing in as{" "}
-                  <strong>
-                    {selectedRole === "admin" ? "Administrator" : "Customer"}
-                  </strong>
-                  ...
-                </span>
-              </div>
-            )}
 
             {/* Role selection options */}
             <div className="d-grid gap-4 mb-5">
