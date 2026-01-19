@@ -8,7 +8,7 @@ All files needed for Replit deployment:
 
 - ✅ `index.js` - Express API server (from backend-index.js)
 - ✅ `package.json` - Backend dependencies
-- ✅ `.env.example` - Environment variables template (Neon PostgreSQL)
+- ✅ `.env.template` - Environment variables template (Neon PostgreSQL)
 - ✅ `.replit` - Replit run configuration
 - ✅ `.gitignore` - Git ignore rules for backend
 - ✅ `README.md` - Complete Replit deployment guide
@@ -21,7 +21,7 @@ All files needed for Vercel deployment:
 - ✅ `vite.config.js` - Vite build configuration
 - ✅ `index.html` - HTML entry point
 - ✅ `eslint.config.js` - ESLint configuration
-- ✅ `.env.example` - Environment variables template
+- ✅ `.env.template` - Environment variables template
 - ✅ `.gitignore` - Git ignore rules for frontend
 - ✅ `README.md` - Complete Vercel deployment guide
 - ✅ `src/` - Complete React source code (components, pages, hooks, etc.)
@@ -60,7 +60,7 @@ project-beauty-salon-v2/
 ├── backend/                          (50 KB) ← Ready for Replit
 │   ├── index.js                      Express API server
 │   ├── package.json                  Backend dependencies
-│   ├── .env.example                  Backend config template
+│   ├── .env.template                 Backend config template
 │   ├── .replit                       Replit run config
 │   ├── .gitignore                    Git ignore rules
 │   └── README.md                     Deployment guide
@@ -87,7 +87,7 @@ project-beauty-salon-v2/
 │   ├── vite.config.js                Vite build config
 │   ├── index.html                    HTML entry point
 │   ├── eslint.config.js              ESLint rules
-│   ├── .env.example                  Frontend config template
+│   ├── .env.template                 Frontend config template
 │   ├── .gitignore                    Git ignore rules
 │   └── README.md                     Deployment guide
 │
@@ -116,7 +116,7 @@ project-beauty-salon-v2/
 
 ### **Configuration**
 
-- ✅ Created separate `.env.example` files for backend and frontend
+- ✅ Created separate `.env.template` files for backend and frontend
 - ✅ Added `.replit` configuration file
 - ✅ Created proper `.gitignore` for each folder
 - ✅ Updated backend CORS configuration

@@ -10,7 +10,7 @@ Your beauty salon project is now properly organized and ready for deployment!
 backend/
 ├── index.js                  # Express API server (28 KB)
 ├── package.json              # Node.js dependencies
-├── .env.example              # Environment variables template
+├── .env.template             # Environment variables template
 ├── .replit                    # Replit run configuration
 ├── .gitignore                # Git ignore rules
 └── README.md                 # Deployment instructions
@@ -33,7 +33,7 @@ frontend/
 ├── package.json              # React dependencies
 ├── vite.config.js            # Vite build config
 ├── index.html                # HTML entry point
-├── .env.example              # Environment variables
+├── .env.template             # Environment variables
 ├── .gitignore                # Git ignore rules
 ├── eslint.config.js          # ESLint configuration
 └── README.md                 # Deployment instructions
@@ -60,7 +60,7 @@ frontend/
 - [x] index.js configured
 - [x] package.json with all dependencies
 - [x] .replit file for auto-run
-- [x] .env.example with Neon PostgreSQL format
+- [x] .env.template with Neon PostgreSQL format
 - [x] CORS configured for Vercel frontend
 - [x] README with step-by-step guide
 
@@ -71,7 +71,7 @@ frontend/
 - [x] All slices updated to use API config
 - [x] package.json with all dependencies
 - [x] vite.config.js ready
-- [x] .env.example with all variables
+- [x] .env.template with all variables
 - [x] README with step-by-step guide
 
 ---
@@ -104,7 +104,7 @@ frontend/
 
 ✅ Environment variables separated by folder  
 ✅ `.env` is in `.gitignore` (not committed)  
-✅ `.env.example` files show structure without secrets  
+✅ `.env.template` files show structure without secrets  
 ✅ CORS configured for production domains  
 ✅ Backend has rate limiting & security headers  
 ✅ Firebase credentials managed securely  
@@ -114,14 +114,14 @@ frontend/
 
 ## 📁 File Organization Summary
 
-| Location                | Purpose              | Size   |
-| ----------------------- | -------------------- | ------ |
-| `backend/index.js`      | Express API server   | 28 KB  |
-| `frontend/src/`         | React components     | 3.4 MB |
-| `backend/package.json`  | Backend dependencies | ~1 KB  |
-| `frontend/package.json` | React dependencies   | ~1 KB  |
-| `backend/.env.example`  | Backend template     | ~3 KB  |
-| `frontend/.env.example` | Frontend template    | ~2 KB  |
+| Location                 | Purpose              | Size   |
+| ------------------------ | -------------------- | ------ |
+| `backend/index.js`       | Express API server   | 28 KB  |
+| `frontend/src/`          | React components     | 3.4 MB |
+| `backend/package.json`   | Backend dependencies | ~1 KB  |
+| `frontend/package.json`  | React dependencies   | ~1 KB  |
+| `backend/.env.template`  | Backend template     | ~3 KB  |
+| `frontend/.env.template` | Frontend template    | ~2 KB  |
 
 ---
 

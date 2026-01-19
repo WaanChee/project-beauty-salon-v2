@@ -9,7 +9,7 @@ project-beauty-salon-v2/
 ├── backend/                    # ← Backend API (copy to beauty-salon-backend repo)
 │   ├── index.js               # Main Express server
 │   ├── package.json           # Backend dependencies
-│   ├── .env.example           # Backend env template (Neon PostgreSQL)
+│   ├── .env.template          # Backend env template (Neon PostgreSQL)
 │   ├── .replit                # Replit configuration
 │   ├── .gitignore             # Backend ignore rules
 │   └── README.md              # Deployment guide for Replit
@@ -26,7 +26,7 @@ project-beauty-salon-v2/
 │   ├── package.json           # Frontend dependencies
 │   ├── vite.config.js         # Vite build config
 │   ├── index.html             # HTML entry point
-│   ├── .env.example           # Frontend env template
+│   ├── .env.template          # Frontend env template
 │   ├── .gitignore             # Frontend ignore rules
 │   ├── eslint.config.js       # ESLint config
 │   └── README.md              # Deployment guide for Vercel
@@ -37,13 +37,12 @@ project-beauty-salon-v2/
 ├── dist/                       # Build output (ignore, auto-generated)
 │
 └── (Old files - can be deleted)
-    ├── backend-index.js       # Now in backend/index.js
-    ├── BACKEND-README.md      # Now in backend/README.md
-    ├── FRONTEND-README.md     # Now in frontend/README.md
-    ├── .env.backend.example   # Now in backend/.env.example
-    ├── .env.example           # Now in frontend/.env.example
-    ├── .replit                # Now in backend/.replit
-    └── Other duplicate files
+      ├── backend-index.js       # Now in backend/index.js
+      ├── BACKEND-README.md      # Now in backend/README.md
+      ├── FRONTEND-README.md     # Now in frontend/README.md
+      ├── Legacy env templates   # Now in backend/.env.template and frontend/.env.template
+      ├── .replit                # Now in backend/.replit
+      └── Other duplicate files
 ```
 
 ---
@@ -64,8 +63,7 @@ These are now copies in their respective folders:
 - `backend-index.js` - Moved to `backend/index.js`
 - `BACKEND-README.md` - Moved to `backend/README.md`
 - `FRONTEND-README.md` - Moved to `frontend/README.md`
-- `.env.backend.example` - Moved to `backend/.env.example`
-- `.env.example` (original) - Moved to `frontend/.env.example`
+- Legacy env templates have been consolidated into `backend/.env.template` and `frontend/.env.template`
 - `.replit` (original) - Moved to `backend/.replit`
 - `node_modules/` - Auto-generated, not needed
 - `dist/` - Build output, auto-generated
@@ -108,7 +106,7 @@ These are now copies in their respective folders:
 backend/
 ├── index.js                    # Main Express server (27.7 KB)
 ├── package.json                # Node.js dependencies
-├── .env.example                # Environment variables template
+├── .env.template               # Environment variables template
 ├── .replit                      # Replit run configuration
 ├── .gitignore                   # Git ignore rules for backend
 └── README.md                    # Replit deployment guide
@@ -137,7 +135,7 @@ frontend/
 ├── vite.config.js               # Vite build config
 ├── index.html                   # HTML template
 ├── eslint.config.js             # ESLint rules
-├── .env.example                 # Environment variables template
+├── .env.template                # Environment variables template
 ├── .gitignore                   # Git ignore rules for frontend
 └── README.md                    # Vercel deployment guide
 ```
@@ -161,9 +159,8 @@ rm eslint.config.js
 rm package.json
 rm package-lock.json
 
-# Remove old env files
-rm .env.backend.example
-rm .env.example
+# Remove old env files (legacy examples)
+find .. -maxdepth 1 -name "*.env.*example" -delete
 
 # Remove old replit config
 rm .replit

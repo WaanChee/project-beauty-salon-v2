@@ -41,13 +41,16 @@ In your Vercel project dashboard:
 2. Add each variable:
 
 #### **Backend API URL**
+
 ```
 Key: VITE_API_URL
 Value: https://your-repl-name.replit.dev
 ```
-*Use your Replit backend URL from Step 1*
+
+_Use your Replit backend URL from Step 1_
 
 #### **Firebase Configuration**
+
 Get these from Firebase Console → Project Settings → Your apps:
 
 ```
@@ -118,22 +121,26 @@ Vercel automatically redeploys when you push to GitHub:
 ## 🛠️ Local Development
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/your-username/beauty-salon-frontend.git
    cd beauty-salon-frontend
    ```
 
 2. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 3. **Create `.env` file:**
+
    ```bash
-   cp .env.example .env
+   cp .env.template .env
    ```
 
 4. **Update `.env` with your values:**
+
    ```env
    VITE_API_URL=http://localhost:3000
    VITE_API_KEY=your-firebase-api-key
@@ -142,6 +149,7 @@ Vercel automatically redeploys when you push to GitHub:
    ```
 
 5. **Run development server:**
+
    ```bash
    npm run dev
    ```
@@ -167,6 +175,7 @@ Vercel automatically redeploys when you push to GitHub:
 ## 🔐 Environment Variables
 
 ### **Development (.env)**
+
 ```env
 VITE_API_URL=http://localhost:3000
 VITE_API_KEY=your-firebase-api-key
@@ -178,7 +187,9 @@ VITE_APP_ID=1:123456789012:web:abcdef123456
 ```
 
 ### **Production (Vercel)**
+
 Same variables, but `VITE_API_URL` points to Replit:
+
 ```
 VITE_API_URL=https://your-repl-name.replit.dev
 ```
@@ -188,21 +199,25 @@ VITE_API_URL=https://your-repl-name.replit.dev
 ## 🐛 Troubleshooting
 
 ### **API calls failing (CORS errors)**
+
 - Check if `VITE_API_URL` in Vercel matches your Replit URL
 - Verify backend `FRONTEND_URL` secret includes your Vercel domain
 - Check browser console for specific error messages
 
 ### **Firebase errors**
+
 - Verify all Firebase environment variables are set correctly
 - Check Firebase Console → Authentication is enabled
 - Check Firebase Console → Storage rules allow your domain
 
 ### **Build fails on Vercel**
+
 - Check Vercel build logs
 - Ensure all dependencies are in `package.json`
 - Verify no import errors or TypeScript issues
 
 ### **Environment variables not working**
+
 - Remember to add `VITE_` prefix to all env vars
 - Redeploy after adding new environment variables
 - Clear browser cache if values seem outdated

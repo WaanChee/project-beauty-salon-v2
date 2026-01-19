@@ -11,7 +11,7 @@ project-beauty-salon-v2/
 ├── backend/                 # Backend API (Replit)
 │   ├── index.js            # Express server
 │   ├── package.json        # Backend dependencies
-│   ├── .env.example        # Environment variables template
+│   ├── .env.template       # Environment variables template
 │   ├── .replit             # Replit configuration
 │   ├── README.md           # Backend deployment guide
 │   └── .gitignore
@@ -26,7 +26,7 @@ project-beauty-salon-v2/
 │   │   └── assets/        # Images, icons
 │   ├── package.json       # Frontend dependencies
 │   ├── vite.config.js     # Vite configuration
-│   ├── .env.example       # Environment variables template
+│   ├── .env.template      # Environment variables template
 │   ├── README.md          # Frontend deployment guide
 │   └── .gitignore
 │

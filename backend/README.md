@@ -13,7 +13,7 @@ Backend API for the Beauty Salon Booking System - Built with Node.js, Express, P
    - `index.js` (rename from `backend-index.js`)
    - `package.json`
    - `.replit`
-   - `.env.backend.example` (rename to `.env.example`)
+   - `.env.template` (copy to `.env` and fill in)
    - `.gitignore`
    - `README.md` (this file)
 
@@ -37,6 +37,7 @@ Backend API for the Beauty Salon Booking System - Built with Node.js, Express, P
 4. Click **"Import from GitHub"**
 
 Replit will automatically:
+
 - Detect Node.js project
 - Install dependencies (`npm install`)
 - Read the `.replit` file to know how to run the app
@@ -51,33 +52,41 @@ In your Replit project:
 2. Add each variable:
 
 #### **DATABASE_URL** (Neon PostgreSQL)
+
 ```
 Key: DATABASE_URL
 Value: postgresql://username:password@ep-xxx-xxx.region.aws.neon.tech/dbname?sslmode=require
 ```
-*Get this from [Neon Console](https://console.neon.tech) → Your Project → Connection String*
+
+_Get this from [Neon Console](https://console.neon.tech) → Your Project → Connection String_
 
 #### **SECRET_KEY** (JWT Secret)
+
 ```
 Key: SECRET_KEY
 Value: (generate a random 32+ character string)
 ```
-*Generate with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` in terminal*
+
+_Generate with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` in terminal_
 
 #### **FIREBASE_SERVICE_ACCOUNT**
+
 ```
 Key: FIREBASE_SERVICE_ACCOUNT
 Value: {"type":"service_account","project_id":"...","private_key":"..."}
 ```
-*Get from Firebase Console → Project Settings → Service Accounts → Generate New Private Key*  
+
+_Get from Firebase Console → Project Settings → Service Accounts → Generate New Private Key_  
 **Important:** Copy the entire JSON as ONE LINE, no line breaks!
 
 #### **FRONTEND_URL** (After deploying frontend to Vercel)
+
 ```
 Key: FRONTEND_URL
 Value: https://your-app.vercel.app
 ```
-*Update this after deploying your frontend to Vercel*
+
+_Update this after deploying your frontend to Vercel_
 
 ---
 
@@ -94,6 +103,7 @@ Value: https://your-app.vercel.app
 ### **Step 5: Test Your Backend**
 
 Open the Replit URL in a browser:
+
 ```
 https://your-repl-name.replit.dev
 ```
@@ -101,6 +111,7 @@ https://your-repl-name.replit.dev
 You should see: `{"message": "Beauty Salon API is running"}` or similar.
 
 Test an endpoint:
+
 ```
 GET https://your-repl-name.replit.dev/bookings
 ```
@@ -116,6 +127,7 @@ Replit can automatically redeploy when you push to GitHub:
 3. Enable **"Auto-deploy from GitHub"**
 
 Now every time you push to `main` branch, Replit will:
+
 - Pull latest code
 - Run `npm install`
 - Restart the server
@@ -130,6 +142,7 @@ Now every time you push to `main` branch, Replit will:
 4. Add it to Replit Secrets as `DATABASE_URL`
 
 Your backend will automatically:
+
 - Connect to Neon PostgreSQL
 - Create tables if they don't exist (if you have migration scripts)
 - Handle all database operations
@@ -161,19 +174,23 @@ Your backend will automatically:
 ## 🐛 Troubleshooting
 
 ### **Backend won't start**
+
 - Check Replit console for errors
 - Verify all Secrets are set correctly
 - Check if `DATABASE_URL` is valid (test in TablePlus or psql)
 
 ### **CORS errors**
+
 - Make sure `FRONTEND_URL` in Secrets matches your Vercel URL exactly
 - Check backend console for CORS blocked logs
 
 ### **Database connection failed**
+
 - Verify Neon connection string includes `?sslmode=require`
 - Check if Neon project is active (not paused)
 
 ### **Firebase Admin errors**
+
 - Verify `FIREBASE_SERVICE_ACCOUNT` is valid JSON (one line)
 - Check if service account has correct permissions in Firebase
 
@@ -182,6 +199,7 @@ Your backend will automatically:
 ## 📞 API Endpoints
 
 See your `backend-index.js` for all available endpoints:
+
 - `GET /bookings` - Get all bookings
 - `POST /bookings` - Create booking
 - `PUT /bookings/:id` - Update booking
@@ -194,6 +212,7 @@ See your `backend-index.js` for all available endpoints:
 ## 🎉 Next Steps
 
 After deploying backend:
+
 1. Copy your Replit URL
 2. Deploy frontend to Vercel
 3. Update frontend's `VITE_API_URL` environment variable
