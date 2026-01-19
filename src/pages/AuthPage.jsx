@@ -345,37 +345,91 @@ export default function AuthPage() {
   // RENDER
   // ============================================================================
   return (
-    <Container>
-      <Row className="min-vh-100">
-        <Col sm={7} className="d-none d-sm-block p-0">
-          <Image
-            src={pic2}
-            fluid
-            style={{ height: "100%", objectFit: "cover" }}
+    <>
+      <Row className="min-vh-100 g-0" style={{ margin: 0 }}>
+        <Col
+          sm={6}
+          lg={6}
+          className="d-none d-sm-block p-0 position-relative overflow-hidden"
+        >
+          <div
+            style={{
+              backgroundImage: `url(${pic2})`,
+              backgroundPosition: "center",
+              backgroundSize: "cover",
+              backgroundRepeat: "no-repeat",
+              height: "100%",
+              width: "100%",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background:
+                "linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(13, 110, 253, 0.05) 100%)",
+            }}
           />
         </Col>
 
-        <Col sm={5} className="p-5 d-flex flex-column justify-content-center">
-          <div className="text-center mb-4">
-            <i
-              className="bi bi-shield-lock"
-              style={{ fontSize: "3rem", color: "#0d6efd" }}
-            ></i>
+        <Col
+          sm={6}
+          lg={6}
+          className="p-4 p-md-5 d-flex flex-column justify-content-center"
+          style={{ background: "#f8f9fa" }}
+        >
+          <div className="text-center mb-5">
+            <div
+              style={{
+                background: "linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)",
+                borderRadius: "12px",
+                padding: "16px",
+                display: "inline-block",
+                marginBottom: "20px",
+                boxShadow: "0 4px 15px rgba(13, 110, 253, 0.3)",
+              }}
+            >
+              <i
+                className="bi bi-shield-lock"
+                style={{ fontSize: "2.5rem", color: "white" }}
+              ></i>
+            </div>
           </div>
 
-          <h2
+          <h1
             className="mb-2 text-center"
-            style={{ fontSize: 36, fontWeight: "bold" }}
+            style={{
+              fontSize: "2.5rem",
+              fontWeight: "700",
+              color: "#1a1a1a",
+              letterSpacing: "-0.5px",
+            }}
           >
             Admin Portal
-          </h2>
-          <p className="text-muted mb-5 text-center">
+          </h1>
+          <p
+            className="text-center mb-5"
+            style={{ color: "#6c757d", fontSize: "1.05rem", fontWeight: "500" }}
+          >
             Manage bookings and system settings
           </p>
 
           {/* Messages */}
           {error && (
-            <Alert variant="danger" dismissible onClose={() => setError(null)}>
+            <Alert
+              variant="danger"
+              dismissible
+              onClose={() => setError(null)}
+              style={{
+                borderRadius: "8px",
+                border: "1px solid #f5c2c7",
+                marginBottom: "1.5rem",
+                padding: "12px 16px",
+              }}
+            >
               <i className="bi bi-exclamation-triangle-fill me-2"></i>
               {error}
             </Alert>
@@ -386,6 +440,12 @@ export default function AuthPage() {
               variant="success"
               dismissible
               onClose={() => setSuccessMessage(null)}
+              style={{
+                borderRadius: "8px",
+                border: "1px solid #badbcc",
+                marginBottom: "1.5rem",
+                padding: "12px 16px",
+              }}
             >
               {successMessage}
             </Alert>
@@ -397,6 +457,13 @@ export default function AuthPage() {
               variant="primary"
               onClick={() => setModalShow("Login")}
               disabled={loading}
+              style={{
+                borderRadius: "8px",
+                fontWeight: "600",
+                padding: "12px 20px",
+                fontSize: "1rem",
+                boxShadow: "0 2px 8px rgba(13, 110, 253, 0.25)",
+              }}
             >
               <i className="bi bi-box-arrow-in-right me-2"></i>
               Admin Login
@@ -407,15 +474,31 @@ export default function AuthPage() {
               variant="outline-secondary"
               onClick={() => setModalShow("SignUp")}
               disabled={loading}
+              style={{
+                borderRadius: "8px",
+                fontWeight: "600",
+                padding: "12px 20px",
+                fontSize: "1rem",
+                borderWidth: "2px",
+              }}
             >
               <i className="bi bi-person-plus me-2"></i>
               Create Admin Account
             </Button>
           </div>
 
-          <Alert variant="warning" className="mt-4">
+          <Alert
+            variant="warning"
+            className="mt-4"
+            style={{
+              borderRadius: "8px",
+              border: "1px solid #ffecb5",
+              padding: "12px 16px",
+              background: "#fffbea",
+            }}
+          >
             <i className="bi bi-info-circle me-2"></i>
-            <small>
+            <small style={{ color: "#664d03" }}>
               <strong>Note:</strong> Admin accounts have full access to manage
               all bookings and customer data.
             </small>
@@ -429,23 +512,49 @@ export default function AuthPage() {
         onHide={handleClose}
         centered
         backdrop="static"
+        dialogClassName="professional-modal"
+        contentClassName="rounded-lg shadow-lg"
       >
-        <Modal.Header closeButton>
-          <Modal.Title>
-            <i className="bi bi-shield-lock me-2"></i>
+        <Modal.Header
+          closeButton
+          style={{ borderBottom: "1px solid #e9ecef", padding: "20px 24px" }}
+        >
+          <Modal.Title
+            style={{ fontSize: "1.25rem", fontWeight: "700", color: "#1a1a1a" }}
+          >
+            <i
+              className="bi bi-shield-lock me-2"
+              style={{ color: "#0d6efd" }}
+            ></i>
             {modalShow === "SignUp" ? "Create Admin Account" : "Admin Login"}
           </Modal.Title>
         </Modal.Header>
 
-        <Modal.Body className="p-4">
+        <Modal.Body className="p-5" style={{ background: "#ffffff" }}>
           {error && (
-            <Alert variant="danger" className="mb-3">
+            <Alert
+              variant="danger"
+              className="mb-3"
+              style={{
+                borderRadius: "8px",
+                border: "1px solid #f5c2c7",
+                padding: "12px 16px",
+              }}
+            >
               {error}
             </Alert>
           )}
 
           {successMessage && (
-            <Alert variant="success" className="mb-3">
+            <Alert
+              variant="success"
+              className="mb-3"
+              style={{
+                borderRadius: "8px",
+                border: "1px solid #badbcc",
+                padding: "12px 16px",
+              }}
+            >
               {successMessage}
             </Alert>
           )}
@@ -453,8 +562,16 @@ export default function AuthPage() {
           <Form onSubmit={modalShow === "SignUp" ? handleSignup : handleLogin}>
             {/* Username (Signup only) */}
             {modalShow === "SignUp" && (
-              <Form.Group className="mb-3">
-                <Form.Label>Username *</Form.Label>
+              <Form.Group className="mb-4">
+                <Form.Label
+                  style={{
+                    fontWeight: "600",
+                    color: "#1a1a1a",
+                    marginBottom: "8px",
+                  }}
+                >
+                  Username *
+                </Form.Label>
                 <Form.Control
                   type="text"
                   value={username}
@@ -462,6 +579,11 @@ export default function AuthPage() {
                   placeholder="Enter admin username"
                   isInvalid={!!fieldErrors.username}
                   disabled={loading}
+                  style={{
+                    borderRadius: "8px",
+                    borderColor: "#dee2e6",
+                    padding: "10px 14px",
+                  }}
                 />
                 <Form.Control.Feedback type="invalid">
                   {fieldErrors.username}
@@ -470,8 +592,16 @@ export default function AuthPage() {
             )}
 
             {/* Email */}
-            <Form.Group className="mb-3">
-              <Form.Label>Email *</Form.Label>
+            <Form.Group className="mb-4">
+              <Form.Label
+                style={{
+                  fontWeight: "600",
+                  color: "#1a1a1a",
+                  marginBottom: "8px",
+                }}
+              >
+                Email *
+              </Form.Label>
               <Form.Control
                 type="email"
                 value={email}
@@ -479,6 +609,11 @@ export default function AuthPage() {
                 placeholder="admin@example.com"
                 isInvalid={!!fieldErrors.email}
                 disabled={loading}
+                style={{
+                  borderRadius: "8px",
+                  borderColor: "#dee2e6",
+                  padding: "10px 14px",
+                }}
               />
               <Form.Control.Feedback type="invalid">
                 {fieldErrors.email}
@@ -486,8 +621,16 @@ export default function AuthPage() {
             </Form.Group>
 
             {/* Password */}
-            <Form.Group className="mb-3">
-              <Form.Label>Password *</Form.Label>
+            <Form.Group className="mb-4">
+              <Form.Label
+                style={{
+                  fontWeight: "600",
+                  color: "#1a1a1a",
+                  marginBottom: "8px",
+                }}
+              >
+                Password *
+              </Form.Label>
               <InputGroup>
                 <Form.Control
                   type={showPassword ? "text" : "password"}
@@ -500,11 +643,17 @@ export default function AuthPage() {
                   }
                   isInvalid={!!fieldErrors.password}
                   disabled={loading}
+                  style={{
+                    borderRadius: "8px 0 0 8px",
+                    borderColor: "#dee2e6",
+                    padding: "10px 14px",
+                  }}
                 />
                 <Button
                   variant="outline-secondary"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={loading}
+                  style={{ borderRadius: "0 8px 8px 0" }}
                 >
                   <i className={`bi bi-eye${showPassword ? "-slash" : ""}`}></i>
                 </Button>
@@ -514,12 +663,18 @@ export default function AuthPage() {
               </InputGroup>
 
               {modalShow === "Login" && (
-                <div className="mt-2">
+                <div className="mt-3">
                   <Button
                     variant="link"
                     className="p-0 small"
                     onClick={handlePasswordReset}
                     disabled={loading}
+                    style={{
+                      color: "#0d6efd",
+                      textDecoration: "none",
+                      fontSize: "0.9rem",
+                      fontWeight: "500",
+                    }}
                   >
                     Forgot password?
                   </Button>
@@ -529,10 +684,16 @@ export default function AuthPage() {
 
             {/* Submit */}
             <Button
-              className="w-100 mt-3"
+              className="w-100 mt-4"
               type="submit"
               size="lg"
               disabled={loading}
+              style={{
+                borderRadius: "8px",
+                fontWeight: "600",
+                padding: "12px 20px",
+                boxShadow: "0 2px 8px rgba(13, 110, 253, 0.25)",
+              }}
             >
               {loading ? (
                 <>
@@ -546,7 +707,7 @@ export default function AuthPage() {
           </Form>
 
           {/* Switch */}
-          <div className="text-center mt-4">
+          <div className="text-center mt-5">
             {modalShow === "SignUp" && (
               <p className="text-muted mb-0">
                 Already have an account?{" "}
@@ -555,6 +716,11 @@ export default function AuthPage() {
                   onClick={() => setModalShow("Login")}
                   className="p-0"
                   disabled={loading}
+                  style={{
+                    color: "#0d6efd",
+                    textDecoration: "none",
+                    fontWeight: "600",
+                  }}
                 >
                   Sign in
                 </Button>
@@ -569,6 +735,11 @@ export default function AuthPage() {
                   onClick={() => setModalShow("SignUp")}
                   className="p-0"
                   disabled={loading}
+                  style={{
+                    color: "#0d6efd",
+                    textDecoration: "none",
+                    fontWeight: "600",
+                  }}
                 >
                   Create one
                 </Button>
@@ -577,6 +748,6 @@ export default function AuthPage() {
           </div>
         </Modal.Body>
       </Modal>
-    </Container>
+    </>
   );
 }
