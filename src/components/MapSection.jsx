@@ -6,10 +6,10 @@ const MapSection = () => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
 
-  // Default location - Change these to your actual salon coordinates
+  // IOI Boulevard Puchong location
   const center = {
-    lat: 40.7128, // New York City latitude
-    lng: -74.006, // New York City longitude
+    lat: 3.0427, // IOI Boulevard Puchong latitude
+    lng: 101.6243, // IOI Boulevard Puchong longitude
   };
 
   const containerStyle = {
@@ -94,7 +94,8 @@ const MapSection = () => {
       <div className="text-center mt-3">
         <p className="text-muted mb-2">
           <i className="bi bi-geo-alt-fill me-2"></i>
-          123 Beauty Street, New York, NY 10001
+          5-7, IOI Boulevard Puchong, Bandar Puchong Jaya, 47170 Puchong,
+          Selangor
         </p>
       </div>
     </Container>
