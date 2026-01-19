@@ -3,12 +3,7 @@
 // ============================================================================
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-
-// ============================================================================
-// API URL - Update this to match your backend
-// ============================================================================
-const API_URL =
-  "https://86605879-7581-472d-a2f1-a4d71a358503-00-1nvtq3qgvln7.pike.replit.dev";
+import API_URL from "../../config/api";
 
 // ============================================================================
 // ASYNC THUNKS - Booking Operations Only

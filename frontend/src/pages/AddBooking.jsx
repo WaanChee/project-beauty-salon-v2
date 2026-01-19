@@ -10,6 +10,7 @@ import {
 import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import API_URL from "../config/api";
 import {
   createBooking,
   clearMessages,
@@ -72,8 +73,6 @@ export default function AddBooking() {
   // Fetch user profile from backend to get database ID
   const fetchUserProfile = async (firebaseUid) => {
     try {
-      const API_URL =
-        "https://86605879-7581-472d-a2f1-a4d71a358503-00-1nvtq3qgvln7.pike.replit.dev";
       const response = await fetch(
         `${API_URL}/customer/profile/${firebaseUid}`,
       );

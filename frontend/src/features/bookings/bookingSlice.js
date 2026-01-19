@@ -1,8 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-
-const API_URL =
-  "https://86605879-7581-472d-a2f1-a4d71a358503-00-1nvtq3qgvln7.pike.replit.dev";
+import API_URL from "../../config/api";
 
 // Async action to fetch all bookings (for admin view later)
 export const fetchBookings = createAsyncThunk(
