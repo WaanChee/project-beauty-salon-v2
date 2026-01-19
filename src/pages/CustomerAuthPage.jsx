@@ -569,27 +569,73 @@ export default function CustomerAuthPage() {
   // RENDER
   // ============================================================================
   return (
-    <Container>
-      <Row className="min-vh-100">
-        <Col sm={7} className="d-none d-sm-block p-0">
-          <Image
-            src={pic2}
-            fluid
-            style={{ height: "100%", objectFit: "cover" }}
+    <>
+      <Row className="min-vh-100 g-0" style={{ margin: 0 }}>
+        <Col
+          sm={6}
+          lg={6}
+          className="d-none d-sm-block p-0 position-relative overflow-hidden"
+        >
+          <div
+            style={{
+              backgroundImage: `url(${pic2})`,
+              backgroundPosition: "center",
+              backgroundSize: "cover",
+              backgroundRepeat: "no-repeat",
+              height: "100%",
+              width: "100%",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background:
+                "linear-gradient(135deg, rgba(108, 117, 125, 0.08) 0%, rgba(108, 117, 125, 0.04) 100%)",
+            }}
           />
         </Col>
 
-        <Col sm={5} className="p-5 d-flex flex-column justify-content-center">
-          <h2 className="mb-2" style={{ fontSize: 36, fontWeight: "bold" }}>
+        <Col
+          sm={6}
+          lg={6}
+          className="p-4 p-md-5 d-flex flex-column justify-content-center"
+          style={{ background: "#f8f9fa" }}
+        >
+          <h1
+            className="mb-3"
+            style={{
+              fontSize: "2.5rem",
+              fontWeight: "700",
+              color: "#1a1a1a",
+              letterSpacing: "-0.5px",
+            }}
+          >
             Welcome Back!
-          </h2>
-          <p className="text-muted mb-5">
+          </h1>
+          <p
+            className="mb-5"
+            style={{ color: "#6c757d", fontSize: "1.05rem", fontWeight: "500" }}
+          >
             Sign in to create a booking and manage your salon bookings!
           </p>
 
           {/* Error Message */}
           {error && (
-            <Alert variant="danger" dismissible onClose={() => setError(null)}>
+            <Alert
+              variant="danger"
+              dismissible
+              onClose={() => setError(null)}
+              style={{
+                borderRadius: "8px",
+                border: "1px solid #f5c2c7",
+                marginBottom: "1.5rem",
+                padding: "12px 16px",
+              }}
+            >
               <i className="bi bi-exclamation-triangle-fill me-2"></i>
               {error}
             </Alert>
@@ -601,6 +647,12 @@ export default function CustomerAuthPage() {
               variant="success"
               dismissible
               onClose={() => setSuccessMessage(null)}
+              style={{
+                borderRadius: "8px",
+                border: "1px solid #badbcc",
+                marginBottom: "1.5rem",
+                padding: "12px 16px",
+              }}
             >
               {successMessage}
             </Alert>
@@ -609,23 +661,38 @@ export default function CustomerAuthPage() {
           <div className="d-grid gap-3">
             <Button
               size="lg"
-              className="rounded-pill"
               onClick={() => setModalShow("SignUp")}
               disabled={loading}
+              style={{
+                borderRadius: "8px",
+                fontWeight: "600",
+                padding: "12px 20px",
+                fontSize: "1rem",
+                boxShadow: "0 2px 8px rgba(13, 110, 253, 0.25)",
+              }}
             >
               Create Account
             </Button>
 
-            <p className="text-center mb-0" style={{ fontWeight: "bold" }}>
+            <p
+              className="text-center mb-0"
+              style={{ fontWeight: "600", color: "#1a1a1a" }}
+            >
               Already have an account?
             </p>
 
             <Button
               size="lg"
-              className="rounded-pill"
               variant="outline-primary"
               onClick={() => setModalShow("Login")}
               disabled={loading}
+              style={{
+                borderRadius: "8px",
+                fontWeight: "600",
+                padding: "12px 20px",
+                fontSize: "1rem",
+                borderWidth: "2px",
+              }}
             >
               Sign In
             </Button>
@@ -642,17 +709,32 @@ export default function CustomerAuthPage() {
         centered
         size="lg"
         backdrop="static"
+        dialogClassName="professional-modal"
+        contentClassName="rounded-lg shadow-lg"
       >
-        <Modal.Header closeButton>
-          <Modal.Title>
+        <Modal.Header
+          closeButton
+          style={{ borderBottom: "1px solid #e9ecef", padding: "20px 24px" }}
+        >
+          <Modal.Title
+            style={{ fontSize: "1.25rem", fontWeight: "700", color: "#1a1a1a" }}
+          >
             {modalShow === "SignUp" ? "Create Your Account" : "Sign In"}
           </Modal.Title>
         </Modal.Header>
 
-        <Modal.Body className="p-4">
+        <Modal.Body className="p-5" style={{ background: "#ffffff" }}>
           {/* Error in modal */}
           {error && (
-            <Alert variant="danger" className="mb-3">
+            <Alert
+              variant="danger"
+              className="mb-3"
+              style={{
+                borderRadius: "8px",
+                border: "1px solid #f5c2c7",
+                padding: "12px 16px",
+              }}
+            >
               <i className="bi bi-exclamation-triangle-fill me-2"></i>
               {error}
             </Alert>
@@ -660,7 +742,15 @@ export default function CustomerAuthPage() {
 
           {/* Success in modal */}
           {successMessage && (
-            <Alert variant="success" className="mb-3">
+            <Alert
+              variant="success"
+              className="mb-3"
+              style={{
+                borderRadius: "8px",
+                border: "1px solid #badbcc",
+                padding: "12px 16px",
+              }}
+            >
               {successMessage}
             </Alert>
           )}
@@ -669,8 +759,16 @@ export default function CustomerAuthPage() {
             {/* SIGNUP FIELDS */}
             {modalShow === "SignUp" && (
               <>
-                <Form.Group className="mb-3">
-                  <Form.Label>Full Name *</Form.Label>
+                <Form.Group className="mb-4">
+                  <Form.Label
+                    style={{
+                      fontWeight: "600",
+                      color: "#1a1a1a",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    Full Name *
+                  </Form.Label>
                   <Form.Control
                     type="text"
                     name="name"
@@ -679,14 +777,27 @@ export default function CustomerAuthPage() {
                     placeholder="John Doe"
                     isInvalid={!!fieldErrors.name}
                     disabled={loading}
+                    style={{
+                      borderRadius: "8px",
+                      borderColor: "#dee2e6",
+                      padding: "10px 14px",
+                    }}
                   />
                   <Form.Control.Feedback type="invalid">
                     {fieldErrors.name}
                   </Form.Control.Feedback>
                 </Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Phone Number *</Form.Label>
+                <Form.Group className="mb-4">
+                  <Form.Label
+                    style={{
+                      fontWeight: "600",
+                      color: "#1a1a1a",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    Phone Number *
+                  </Form.Label>
                   <Form.Control
                     type="tel"
                     name="phone_number"
@@ -695,6 +806,11 @@ export default function CustomerAuthPage() {
                     placeholder="+60123456789"
                     isInvalid={!!fieldErrors.phone_number}
                     disabled={loading}
+                    style={{
+                      borderRadius: "8px",
+                      borderColor: "#dee2e6",
+                      padding: "10px 14px",
+                    }}
                   />
                   <Form.Control.Feedback type="invalid">
                     {fieldErrors.phone_number}
@@ -707,8 +823,16 @@ export default function CustomerAuthPage() {
             )}
 
             {/* EMAIL FIELD (Both) */}
-            <Form.Group className="mb-3">
-              <Form.Label>Email Address *</Form.Label>
+            <Form.Group className="mb-4">
+              <Form.Label
+                style={{
+                  fontWeight: "600",
+                  color: "#1a1a1a",
+                  marginBottom: "8px",
+                }}
+              >
+                Email Address *
+              </Form.Label>
               <Form.Control
                 type="email"
                 name="email"
@@ -717,6 +841,11 @@ export default function CustomerAuthPage() {
                 placeholder="your@email.com"
                 isInvalid={!!fieldErrors.email}
                 disabled={loading}
+                style={{
+                  borderRadius: "8px",
+                  borderColor: "#dee2e6",
+                  padding: "10px 14px",
+                }}
               />
               <Form.Control.Feedback type="invalid">
                 {fieldErrors.email}
@@ -724,8 +853,16 @@ export default function CustomerAuthPage() {
             </Form.Group>
 
             {/* PASSWORD FIELD (Both) */}
-            <Form.Group className="mb-3">
-              <Form.Label>Password *</Form.Label>
+            <Form.Group className="mb-4">
+              <Form.Label
+                style={{
+                  fontWeight: "600",
+                  color: "#1a1a1a",
+                  marginBottom: "8px",
+                }}
+              >
+                Password *
+              </Form.Label>
               <InputGroup>
                 <Form.Control
                   type={showPassword ? "text" : "password"}
@@ -739,11 +876,17 @@ export default function CustomerAuthPage() {
                   }
                   isInvalid={!!fieldErrors.password}
                   disabled={loading}
+                  style={{
+                    borderRadius: "8px 0 0 8px",
+                    borderColor: "#dee2e6",
+                    padding: "10px 14px",
+                  }}
                 />
                 <Button
                   variant="outline-secondary"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={loading}
+                  style={{ borderRadius: "0 8px 8px 0" }}
                 >
                   <i className={`bi bi-eye${showPassword ? "-slash" : ""}`}></i>
                 </Button>
@@ -754,8 +897,11 @@ export default function CustomerAuthPage() {
 
               {/* Password strength indicator (signup only) */}
               {modalShow === "SignUp" && formData.password && (
-                <div className="mt-2">
-                  <div className="progress" style={{ height: "6px" }}>
+                <div className="mt-3">
+                  <div
+                    className="progress"
+                    style={{ height: "6px", borderRadius: "3px" }}
+                  >
                     <div
                       className={`progress-bar bg-${passwordStrength.color}`}
                       style={{
@@ -764,7 +910,7 @@ export default function CustomerAuthPage() {
                     ></div>
                   </div>
 
-                  <div className="d-flex justify-content-between align-items-center mt-1">
+                  <div className="d-flex justify-content-between align-items-center mt-2">
                     <small className={`text-${passwordStrength.color} fw-bold`}>
                       <i className="bi bi-shield-fill me-1"></i>
                       {passwordStrength.strength}
@@ -778,12 +924,18 @@ export default function CustomerAuthPage() {
 
               {/* Forgot password link (login only) */}
               {modalShow === "Login" && (
-                <div className="mt-2">
+                <div className="mt-3">
                   <Button
                     variant="link"
                     className="p-0 small"
                     onClick={handlePasswordReset}
                     disabled={loading}
+                    style={{
+                      color: "#0d6efd",
+                      textDecoration: "none",
+                      fontSize: "0.9rem",
+                      fontWeight: "500",
+                    }}
                   >
                     <i className="bi bi-key me-1"></i>
                     Forgot your password?
@@ -794,10 +946,16 @@ export default function CustomerAuthPage() {
 
             {/* SUBMIT BUTTON */}
             <Button
-              className="w-100 mt-3"
+              className="w-100 mt-4"
               type="submit"
               size="lg"
               disabled={loading}
+              style={{
+                borderRadius: "8px",
+                fontWeight: "600",
+                padding: "12px 20px",
+                boxShadow: "0 2px 8px rgba(13, 110, 253, 0.25)",
+              }}
             >
               {loading ? (
                 <>
@@ -818,7 +976,7 @@ export default function CustomerAuthPage() {
           </Form>
 
           {/* SWITCH BETWEEN LOGIN/SIGNUP */}
-          <div className="text-center mt-4">
+          <div className="text-center mt-5">
             {modalShow === "SignUp" && (
               <p className="text-muted mb-0">
                 Already have an account?{" "}
@@ -831,6 +989,11 @@ export default function CustomerAuthPage() {
                   }}
                   className="p-0"
                   disabled={loading}
+                  style={{
+                    color: "#0d6efd",
+                    textDecoration: "none",
+                    fontWeight: "600",
+                  }}
                 >
                   Sign in here
                 </Button>
@@ -849,6 +1012,11 @@ export default function CustomerAuthPage() {
                   }}
                   className="p-0"
                   disabled={loading}
+                  style={{
+                    color: "#0d6efd",
+                    textDecoration: "none",
+                    fontWeight: "600",
+                  }}
                 >
                   Create one here
                 </Button>
@@ -857,7 +1025,7 @@ export default function CustomerAuthPage() {
           </div>
 
           {/* Firebase branding */}
-          <div className="text-center mt-3">
+          <div className="text-center mt-4">
             <small className="text-muted">
               <i className="bi bi-shield-check me-1"></i>
               Secured by Firebase Authentication
@@ -865,6 +1033,6 @@ export default function CustomerAuthPage() {
           </div>
         </Modal.Body>
       </Modal>
-    </Container>
+    </>
   );
 }
