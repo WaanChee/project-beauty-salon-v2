@@ -10,4 +10,5 @@ if (import.meta.env.DEV) {
   console.log('🔗 API URL:', API_URL);
 }
 
+export { API_URL };
 export default API_URL;
