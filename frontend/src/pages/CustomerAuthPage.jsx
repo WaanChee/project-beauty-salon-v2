@@ -22,15 +22,10 @@ import { auth } from "../config/firebase";
 import axios from "axios";
 import pic2 from "../assets/images/beauty-salon-login-page-bg.png";
 import { signOut } from "firebase/auth";
+import { API_URL } from "../config/api";
 
 export default function CustomerAuthPage() {
   const navigate = useNavigate();
-
-  // ============================================================================
-  // API URL
-  // ============================================================================
-  const API_URL =
-    "https://86605879-7581-472d-a2f1-a4d71a358503-00-1nvtq3qgvln7.pike.replit.dev";
 
   // ============================================================================
   // STATE
