@@ -136,25 +136,28 @@ function Layout() {
               )}
             </Nav>
 
-            {/* Right-side area: login button */}
-            <div className="d-flex gap-2 align-items-center">
+            {/* Right-side area: login button - now inside collapse for mobile */}
+            <Nav className="ms-auto">
               {/* IF admin is logged in, show logout */}
               {adminUser && typeof adminUser === "object" ? (
                 <>
                   <span className="navbar-text me-2">
                     👨‍💼 {adminUser?.username || "Admin"}
                   </span>
-                  <Button
-                    variant="outline-danger"
-                    size="sm"
-                    onClick={() => {
-                      setAdminUser(null);
-                      setAdminToken("");
-                      navigate("/login");
-                    }}
-                  >
-                    Logout
-                  </Button>
+                  <Nav.Item>
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={() => {
+                        setAdminUser(null);
+                        setAdminToken("");
+                        navigate("/login");
+                      }}
+                      className="ms-2"
+                    >
+                      Logout
+                    </Button>
+                  </Nav.Item>
                 </>
               ) : (
                 <>
@@ -164,22 +167,27 @@ function Layout() {
                       <span className="navbar-text me-2">
                         👋 {customerUser?.name}
                       </span>
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        onClick={handleCustomerLogout}
-                      >
-                        Logout
-                      </Button>
+                      <Nav.Item>
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          onClick={handleCustomerLogout}
+                          className="ms-2"
+                        >
+                          Logout
+                        </Button>
+                      </Nav.Item>
                     </>
                   ) : (
-                    <Button as={Link} to="/login" variant="dark" size="sm">
-                      Login
-                    </Button>
+                    <Nav.Item>
+                      <Button as={Link} to="/login" variant="dark" size="sm">
+                        Login
+                      </Button>
+                    </Nav.Item>
                   )}
                 </>
               )}
-            </div>
+            </Nav>
           </Navbar.Collapse>
         </Container>
       </Navbar>
