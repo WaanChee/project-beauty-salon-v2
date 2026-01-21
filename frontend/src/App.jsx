@@ -137,11 +137,11 @@ function Layout() {
             </Nav>
 
             {/* Right-side login/logout section */}
-            <Nav className="ms-auto">
+            <div className="d-flex align-items-center ms-lg-auto mt-2 mt-lg-0">
               {/* IF admin is logged in, show logout */}
               {adminUser && typeof adminUser === "object" ? (
-                <div className="d-flex align-items-center gap-2">
-                  <span className="navbar-text">
+                <>
+                  <span className="navbar-text me-2">
                     👨‍💼 {adminUser?.username || "Admin"}
                   </span>
                   <Button
@@ -155,13 +155,13 @@ function Layout() {
                   >
                     Logout
                   </Button>
-                </div>
+                </>
               ) : (
                 <>
                   {/* IF customer is logged in, show their name and logout */}
                   {customerToken ? (
-                    <div className="d-flex align-items-center gap-2">
-                      <span className="navbar-text">
+                    <>
+                      <span className="navbar-text me-2">
                         👋 {customerUser?.name}
                       </span>
                       <Button
@@ -171,17 +171,15 @@ function Layout() {
                       >
                         Logout
                       </Button>
-                    </div>
+                    </>
                   ) : (
-                    <div className="d-flex align-items-center gap-2">
-                      <Button as={Link} to="/login" variant="dark" size="sm">
-                        Login
-                      </Button>
-                    </div>
+                    <Button as={Link} to="/login" variant="dark" size="sm">
+                      Login
+                    </Button>
                   )}
                 </>
               )}
-            </Nav>
+            </div>
           </Navbar.Collapse>
         </Container>
       </Navbar>
