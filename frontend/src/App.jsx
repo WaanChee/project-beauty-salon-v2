@@ -107,8 +107,53 @@ function Layout() {
           {/* Hamburger for mobile */}
           <Navbar.Toggle aria-controls="main-nav" />
 
-          {/* Collapsible nav - use me-auto to push next element to the right */}
-          <Navbar.Collapse id="main-nav">
+          {/* Right-side login button - always visible, not in collapse */}
+          <div className="d-flex align-items-center order-lg-2 ms-auto ms-lg-0">
+            {/* IF admin is logged in, show logout */}
+            {adminUser && typeof adminUser === "object" ? (
+              <>
+                <span className="navbar-text me-2">
+                  👨‍💼 {adminUser?.username || "Admin"}
+                </span>
+                <Button
+                  variant="outline-danger"
+                  size="sm"
+                  onClick={() => {
+                    setAdminUser(null);
+                    setAdminToken("");
+                    navigate("/login");
+                  }}
+                >
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                {/* IF customer is logged in, show their name and logout */}
+                {customerToken ? (
+                  <>
+                    <span className="navbar-text me-2">
+                      👋 {customerUser?.name}
+                    </span>
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={handleCustomerLogout}
+                    >
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <Button as={Link} to="/login" variant="dark" size="sm">
+                    Login
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Collapsible nav */}
+          <Navbar.Collapse id="main-nav" className="order-lg-1">
             <Nav className="me-auto">
               {/* BOOK A SALON - Routes based on who's logged in */}
               {adminUser ? (
@@ -133,51 +178,6 @@ function Layout() {
                 <Nav.Link as={Link} to="/customer/dashboard">
                   My Bookings
                 </Nav.Link>
-              )}
-            </Nav>
-
-            {/* Right-side area: login button - now inside collapse for mobile */}
-            <Nav className="ms-auto d-flex align-items-center">
-              {/* IF admin is logged in, show logout */}
-              {adminUser && typeof adminUser === "object" ? (
-                <>
-                  <span className="navbar-text me-2">
-                    👨‍💼 {adminUser?.username || "Admin"}
-                  </span>
-                  <Button
-                    variant="outline-danger"
-                    size="sm"
-                    onClick={() => {
-                      setAdminUser(null);
-                      setAdminToken("");
-                      navigate("/login");
-                    }}
-                  >
-                    Logout
-                  </Button>
-                </>
-              ) : (
-                <>
-                  {/* IF customer is logged in, show their name and logout */}
-                  {customerToken ? (
-                    <>
-                      <span className="navbar-text me-2">
-                        👋 {customerUser?.name}
-                      </span>
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        onClick={handleCustomerLogout}
-                      >
-                        Logout
-                      </Button>
-                    </>
-                  ) : (
-                    <Button as={Link} to="/login" variant="dark" size="sm">
-                      Login
-                    </Button>
-                  )}
-                </>
               )}
             </Nav>
           </Navbar.Collapse>
