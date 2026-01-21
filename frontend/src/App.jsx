@@ -173,11 +173,11 @@ function Layout() {
                       </Button>
                     </div>
                   ) : (
-                    <Nav.Item>
+                    <div className="d-flex align-items-center gap-2">
                       <Button as={Link} to="/login" variant="dark" size="sm">
                         Login
                       </Button>
-                    </Nav.Item>
+                    </div>
                   )}
                 </>
               )}
