@@ -137,10 +137,10 @@ function Layout() {
             </Nav>
 
             {/* Right-side login/logout section */}
-            <div className="d-flex align-items-center gap-2">
+            <Nav>
               {/* IF admin is logged in, show logout */}
               {adminUser && typeof adminUser === "object" ? (
-                <>
+                <div className="d-flex align-items-center gap-2">
                   <span className="navbar-text">
                     👨‍💼 {adminUser?.username || "Admin"}
                   </span>
@@ -155,12 +155,12 @@ function Layout() {
                   >
                     Logout
                   </Button>
-                </>
+                </div>
               ) : (
                 <>
                   {/* IF customer is logged in, show their name and logout */}
                   {customerToken ? (
-                    <>
+                    <div className="d-flex align-items-center gap-2">
                       <span className="navbar-text">
                         👋 {customerUser?.name}
                       </span>
@@ -171,15 +171,17 @@ function Layout() {
                       >
                         Logout
                       </Button>
-                    </>
+                    </div>
                   ) : (
-                    <Button as={Link} to="/login" variant="dark" size="sm">
-                      Login
-                    </Button>
+                    <Nav.Item>
+                      <Button as={Link} to="/login" variant="dark" size="sm">
+                        Login
+                      </Button>
+                    </Nav.Item>
                   )}
                 </>
               )}
-            </div>
+            </Nav>
           </Navbar.Collapse>
         </Container>
       </Navbar>
