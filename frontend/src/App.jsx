@@ -137,7 +137,7 @@ function Layout() {
             </Nav>
 
             {/* Right-side login/logout section */}
-            <Nav>
+            <Nav className="ms-auto">
               {/* IF admin is logged in, show logout */}
               {adminUser && typeof adminUser === "object" ? (
                 <div className="d-flex align-items-center gap-2">
