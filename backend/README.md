@@ -4,6 +4,29 @@ Backend API for the Beauty Salon Booking System - Built with Node.js, Express, P
 
 ---
 
+## 🏗️ Architecture Overview
+
+This backend uses a **hybrid architecture** combining the strengths of different services:
+
+### **Why Neon SQL (PostgreSQL)?**
+
+- Stores **structured data**: bookings, customers, appointments
+- Perfect for complex queries and relationships between data
+- Provides ACID compliance for critical business transactions
+- Ideal for data that needs joins, filters, and aggregations
+
+### **Why Firebase Storage?**
+
+- Stores **image files** for the gallery feature
+- Optimized specifically for file storage and delivery
+- Provides automatic CDN distribution for fast image loading worldwide
+- SQL databases aren't designed to efficiently store large binary files
+- While Firebase Firestore stores the metadata (URLs, titles, descriptions)
+
+**Simple Analogy:** Neon SQL is like a filing cabinet for organized documents, Firebase Storage is like a photo album for images. Each tool does what it does best!
+
+---
+
 ## 🚀 Deployment to Replit
 
 ### **Step 1: Prepare Your Backend Repository**

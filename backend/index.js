@@ -48,7 +48,7 @@ try {
     console.log("✅ Firebase Admin initialized from file");
   } else {
     console.warn(
-      "⚠️ Firebase Admin not initialized - set FIREBASE_SERVICE_ACCOUNT env variable"
+      "⚠️ Firebase Admin not initialized - set FIREBASE_SERVICE_ACCOUNT env variable",
     );
   }
 } catch (error) {
@@ -63,28 +63,42 @@ app.use(helmet()); // Security headers
 
 // CORS Configuration - Allow frontend from Vercel
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'https://your-app.vercel.app',
-  'http://localhost:5173', // Vite dev server
-  'http://localhost:3000', // Alternative local port
-  'http://127.0.0.1:5173'
+  process.env.FRONTEND_URL || "https://your-app.vercel.app",
+  "http://localhost:5173", // Vite dev server
+  "http://localhost:3000", // Alternative local port
+  "http://127.0.0.1:5173",
 ];
 
-app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, curl)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      console.warn(`❌ CORS blocked origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (mobile apps, Postman, curl)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.warn(`❌ CORS blocked origin: ${origin}`);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+      "Origin",
+      "Cache-Control",
+      "Pragma",
+      "Expires",
+      "X-File-Name",
+    ],
+    exposedHeaders: ["Content-Length", "X-JSON"],
+    maxAge: 86400, // 24 hours
+  }),
+);
 
 app.use(express.json());
 
@@ -137,7 +151,7 @@ async function testDatabaseConnection() {
     console.log("✅ Database connected successfully!");
     console.log(
       "📊 PostgreSQL version:",
-      response.rows[0].version.split(" ")[0]
+      response.rows[0].version.split(" ")[0],
     );
   } catch (error) {
     console.error("❌ Database connection failed:", error.stack);
@@ -148,12 +162,72 @@ async function testDatabaseConnection() {
 
 testDatabaseConnection();
 
+// ============================================================================
+// DATABASE INITIALIZATION - AUTO-CREATE TABLES
+// ============================================================================
+async function initializeDatabase() {
+  const client = await pool.connect();
+  try {
+    // Create users table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        firebase_uid VARCHAR(255),
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        phone_number VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("✅ Users table initialized");
+
+    // Create admins table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS admins (
+        id SERIAL PRIMARY KEY,
+        firebase_uid VARCHAR(255) UNIQUE,
+        username VARCHAR(255) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("✅ Admins table initialized");
+
+    // Create bookings table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS bookings (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        date DATE NOT NULL,
+        time TIME NOT NULL,
+        status VARCHAR(50) DEFAULT 'Pending',
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        phone_snapshot VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("✅ Bookings table initialized");
+
+    console.log("✅ Database schema initialized successfully!");
+  } catch (error) {
+    console.error("❌ Database initialization error:", error.message);
+  } finally {
+    client.release();
+  }
+}
+
+initializeDatabase();
+
 // Ensure bookings table has phone_snapshot to avoid overwriting historical phones
 async function ensurePhoneSnapshotColumn() {
   const client = await pool.connect();
   try {
     await client.query(
-      "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS phone_snapshot VARCHAR(50)"
+      "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS phone_snapshot VARCHAR(50)",
     );
     console.log("✅ bookings.phone_snapshot column ensured");
   } catch (error) {
@@ -199,7 +273,7 @@ const COMMON_PASSWORDS = [
 const isCommonPassword = (password) => {
   const lowerPassword = password.toLowerCase();
   return COMMON_PASSWORDS.some((common) =>
-    lowerPassword.includes(common.toLowerCase())
+    lowerPassword.includes(common.toLowerCase()),
   );
 };
 
@@ -355,7 +429,7 @@ app.get("/customer/profile/:uid", async (req, res) => {
 
     const result = await pool.query(
       "SELECT id, firebase_uid, name, email, phone_number, created_at FROM users WHERE firebase_uid = $1",
-      [uid]
+      [uid],
     );
 
     if (result.rows.length === 0) {
@@ -385,7 +459,7 @@ app.put("/customer/profile/:uid", async (req, res) => {
        SET name = $1, phone_number = $2
        WHERE firebase_uid = $3
        RETURNING id, firebase_uid, name, email, phone_number, created_at`,
-      [name, phone_number, uid]
+      [name, phone_number, uid],
     );
 
     if (result.rows.length === 0) {
@@ -478,7 +552,7 @@ app.get("/admin/verify/:uid", async (req, res) => {
 
     const result = await pool.query(
       "SELECT id, firebase_uid, username, email, created_at FROM admins WHERE firebase_uid = $1",
-      [uid]
+      [uid],
     );
 
     if (result.rows.length === 0) {
@@ -557,7 +631,7 @@ app.get("/bookings/:id", async (req, res) => {
       LEFT JOIN users u ON b.user_id = u.id
       WHERE b.id = $1
     `,
-      [id]
+      [id],
     );
 
     if (result.rows.length === 0) {
@@ -607,7 +681,7 @@ app.post("/bookings", async (req, res) => {
     // Check if user exists (by email)
     let userResult = await client.query(
       "SELECT * FROM users WHERE email = $1",
-      [user_email.toLowerCase().trim()]
+      [user_email.toLowerCase().trim()],
     );
 
     let userId;
@@ -616,13 +690,13 @@ app.post("/bookings", async (req, res) => {
       // User exists, use their ID but DON'T update phone (use snapshot instead)
       userId = userResult.rows[0].id;
       console.log(
-        `✅ Using existing user ID ${userId}, phone stored in booking snapshot only`
+        `✅ Using existing user ID ${userId}, phone stored in booking snapshot only`,
       );
     } else {
       // User doesn't exist, create new user
       const newUserResult = await client.query(
         "INSERT INTO users (name, phone_number, email) VALUES ($1, $2, $3) RETURNING id",
-        [user_name.trim(), user_phone.trim(), user_email.toLowerCase().trim()]
+        [user_name.trim(), user_phone.trim(), user_email.toLowerCase().trim()],
       );
       userId = newUserResult.rows[0].id;
       console.log(`✅ New user created with ID ${userId}`);
@@ -631,7 +705,7 @@ app.post("/bookings", async (req, res) => {
     // Create booking
     const bookingResult = await client.query(
       "INSERT INTO bookings (title, description, date, time, user_id, phone_snapshot) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-      [title, description || "", date, time, userId, user_phone.trim()]
+      [title, description || "", date, time, userId, user_phone.trim()],
     );
 
     // Get complete booking with user info
@@ -653,7 +727,7 @@ app.post("/bookings", async (req, res) => {
       LEFT JOIN users u ON b.user_id = u.id
       WHERE b.id = $1
     `,
-      [bookingResult.rows[0].id]
+      [bookingResult.rows[0].id],
     );
 
     // Commit transaction
@@ -679,7 +753,7 @@ app.put("/bookings/:id", async (req, res) => {
 
     const result = await pool.query(
       "UPDATE bookings SET title = $1, description = $2, date = $3, time = $4, status = $5 WHERE id = $6 RETURNING *",
-      [title, description, date, time, status, id]
+      [title, description, date, time, status, id],
     );
 
     if (result.rows.length === 0) {
@@ -705,7 +779,7 @@ app.put("/bookings/:id", async (req, res) => {
       LEFT JOIN users u ON b.user_id = u.id
       WHERE b.id = $1
     `,
-      [id]
+      [id],
     );
 
     res.json(completeBooking.rows[0]);
@@ -722,7 +796,7 @@ app.delete("/bookings/:id", async (req, res) => {
 
     const result = await pool.query(
       "DELETE FROM bookings WHERE id = $1 RETURNING *",
-      [id]
+      [id],
     );
 
     if (result.rows.length === 0) {
@@ -767,7 +841,7 @@ app.get("/customer/bookings/:userId", async (req, res) => {
       WHERE b.user_id = $1
       ORDER BY b.created_at DESC
     `,
-      [userId]
+      [userId],
     );
 
     res.json(result.rows);
@@ -786,7 +860,7 @@ app.patch("/customer/bookings/:id/cancel", async (req, res) => {
     // Verify booking belongs to user
     const checkResult = await pool.query(
       "SELECT * FROM bookings WHERE id = $1 AND user_id = $2",
-      [id, userId]
+      [id, userId],
     );
 
     if (checkResult.rows.length === 0) {
@@ -808,7 +882,7 @@ app.patch("/customer/bookings/:id/cancel", async (req, res) => {
     // Update booking status
     const result = await pool.query(
       "UPDATE bookings SET status = $1 WHERE id = $2 RETURNING *",
-      ["Cancelled", id]
+      ["Cancelled", id],
     );
 
     // Get complete booking with user info
@@ -830,7 +904,7 @@ app.patch("/customer/bookings/:id/cancel", async (req, res) => {
       LEFT JOIN users u ON b.user_id = u.id
       WHERE b.id = $1
     `,
-      [id]
+      [id],
     );
 
     res.json({
@@ -890,7 +964,7 @@ app.get("/users/:id", async (req, res) => {
       WHERE u.id = $1
       GROUP BY u.id
     `,
-      [id]
+      [id],
     );
 
     if (result.rows.length === 0) {
@@ -935,13 +1009,13 @@ app.listen(PORT, () => {
   console.log("============================================");
   console.log(`📍 Server running on port ${PORT}`);
   console.log(
-    `🌐 API URL: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+    `🌐 API URL: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`,
   );
   console.log(`📖 Documentation available at: GET /`);
   console.log(
     `🔥 Firebase Authentication: ${
       admin.apps.length > 0 ? "ENABLED" : "DISABLED"
-    }`
+    }`,
   );
   console.log("============================================");
 });
