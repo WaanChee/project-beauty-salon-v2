@@ -411,6 +411,60 @@ export default function CustomerAuthPage() {
           status: profileError.response?.status,
         });
 
+        if (
+          profileError.message === "CUSTOMER_PROFILE_NOT_FOUND" ||
+          profileError.response?.status === 404
+        ) {
+          console.warn(
+            "⚠️ Customer profile missing. Attempting auto-creation from Firebase user data.",
+          );
+
+          const defaultName =
+            user.displayName || user.email?.split("@")[0] || "Customer";
+          const createPayload = {
+            uid: user.uid,
+            name: defaultName,
+            email: user.email,
+            phone_number: user.phoneNumber || "",
+          };
+
+          try {
+            const createResponse = await axios.post(
+              `${API_URL}/customer/create-profile`,
+              createPayload,
+            );
+            const profile = createResponse.data.profile;
+
+            console.log("✅ Auto-created customer profile:", profile);
+
+            const userProfile = {
+              uid: user.uid,
+              id: profile.id,
+              name: profile.name,
+              email: profile.email,
+              phone_number: profile.phone_number,
+            };
+
+            localStorage.setItem("customerToken", idToken);
+            localStorage.setItem("customerUser", JSON.stringify(userProfile));
+            setCustomerUser(userProfile);
+            setSuccessMessage(
+              "✅ Customer profile created automatically. Redirecting...",
+            );
+            navigate("/customer/dashboard", { replace: true });
+            return;
+          } catch (createError) {
+            console.error("❌ Auto-create profile failed:", createError);
+            setError(
+              "No customer profile found for this account. Please sign up or contact support.",
+            );
+            await signOut(auth);
+            localStorage.removeItem("customerToken");
+            localStorage.removeItem("customerUser");
+            return;
+          }
+        }
+
         // Stop login if no customer profile or role mismatch
         await signOut(auth);
         localStorage.removeItem("customerToken");
@@ -422,13 +476,6 @@ export default function CustomerAuthPage() {
         ) {
           setError(
             "This account is for admins. Please sign in using the admin portal.",
-          );
-        } else if (
-          profileError.message === "CUSTOMER_PROFILE_NOT_FOUND" ||
-          profileError.response?.status === 404
-        ) {
-          setError(
-            "No customer profile found for this account. Please create a customer account to continue.",
           );
         } else {
           setError(

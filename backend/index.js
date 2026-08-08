@@ -446,11 +446,13 @@ app.post("/customer/create-profile", authLimiter, async (req, res) => {
     const { uid, name, email, phone_number } = req.body;
 
     // Validation
-    if (!uid || !name || !email || !phone_number) {
+    if (!uid || !name || !email) {
       return res.status(400).json({
-        error: "Missing required fields: uid, name, email, phone_number",
+        error: "Missing required fields: uid, name, email",
       });
     }
+
+    const normalizedPhone = phone_number ? phone_number.trim() : null;
 
     // Check if profile already exists
     const checkQuery = "SELECT * FROM users WHERE firebase_uid = $1";
@@ -474,7 +476,7 @@ app.post("/customer/create-profile", authLimiter, async (req, res) => {
       uid,
       name.trim(),
       email.toLowerCase().trim(),
-      phone_number.trim(),
+      normalizedPhone,
     ]);
 
     console.log(`✅ Customer profile created for uid: ${uid}`);
