@@ -509,6 +509,7 @@ app.post("/customer/create-profile", authLimiter, async (req, res) => {
 app.get("/customer/profile/:uid", async (req, res) => {
   try {
     const { uid } = req.params;
+    const { email } = req.query;
 
     const result = await pool.query(
       "SELECT id, firebase_uid, name, email, phone_number, created_at FROM users WHERE firebase_uid = $1",
@@ -516,6 +517,34 @@ app.get("/customer/profile/:uid", async (req, res) => {
     );
 
     if (result.rows.length === 0) {
+      if (email) {
+        const emailResult = await pool.query(
+          "SELECT id, firebase_uid, name, email, phone_number, created_at FROM users WHERE LOWER(email) = LOWER($1)",
+          [email],
+        );
+
+        if (emailResult.rows.length > 0) {
+          const profile = emailResult.rows[0];
+
+          if (!profile.firebase_uid || profile.firebase_uid.trim() === "") {
+            const updateResult = await pool.query(
+              "UPDATE users SET firebase_uid = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, firebase_uid, name, email, phone_number, created_at",
+              [uid, profile.id],
+            );
+            const updatedProfile = updateResult.rows[0];
+            console.log(
+              `✅ Updated missing firebase_uid for customer ${updatedProfile.email} to ${uid}`,
+            );
+            return res.json(updatedProfile);
+          }
+
+          console.log(
+            `✅ Found customer profile by email fallback for ${email}`,
+          );
+          return res.json(profile);
+        }
+      }
+
       return res.status(404).json({
         error: "Customer profile not found",
       });

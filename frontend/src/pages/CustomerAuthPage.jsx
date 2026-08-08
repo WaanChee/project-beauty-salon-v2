@@ -421,9 +421,9 @@ export default function CustomerAuthPage() {
 
           try {
             const emailFallbackResponse = await axios.get(
-              `${API_URL}/customer/profile-by-email?email=${encodeURIComponent(
+              `${API_URL}/customer/profile/${user.uid}?email=${encodeURIComponent(
                 user.email,
-              )}&uid=${encodeURIComponent(user.uid)}`,
+              )}`,
             );
 
             console.log(
