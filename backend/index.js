@@ -704,6 +704,11 @@ app.post("/admin/create-profile", authLimiter, async (req, res) => {
 app.get("/admin/verify/:uid", async (req, res) => {
   try {
     const { uid } = req.params;
+    const { email } = req.query;
+
+    console.log(
+      `🔍 Admin verify request received for uid=${uid}, email=${email}`,
+    );
 
     const result = await pool.query(
       "SELECT id, firebase_uid, username, email, created_at FROM admins WHERE firebase_uid = $1",
@@ -711,6 +716,40 @@ app.get("/admin/verify/:uid", async (req, res) => {
     );
 
     if (result.rows.length === 0) {
+      if (email) {
+        const emailResult = await pool.query(
+          "SELECT id, firebase_uid, username, email, created_at FROM admins WHERE LOWER(email) = LOWER($1)",
+          [email],
+        );
+
+        if (emailResult.rows.length > 0) {
+          const admin = emailResult.rows[0];
+
+          if (!admin.firebase_uid || admin.firebase_uid.trim() === "") {
+            const updatedResult = await pool.query(
+              "UPDATE admins SET firebase_uid = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, firebase_uid, username, email, created_at",
+              [uid, admin.id],
+            );
+            const updatedAdmin = updatedResult.rows[0];
+            console.log(
+              `✅ Updated missing admin firebase_uid for ${updatedAdmin.email} to ${uid}`,
+            );
+            return res.json({
+              isAdmin: true,
+              username: updatedAdmin.username,
+              admin: updatedAdmin,
+            });
+          }
+
+          console.log(`✅ Admin profile found by email fallback for ${email}`);
+          return res.json({
+            isAdmin: true,
+            username: admin.username,
+            admin,
+          });
+        }
+      }
+
       return res.status(404).json({
         isAdmin: false,
         error: "Admin profile not found",

@@ -351,7 +351,9 @@ export default function CustomerAuthPage() {
         console.log(`🔍 Fetching profile for UID: ${user.uid}`);
 
         const response = await axios.get(
-          `${API_URL}/customer/profile/${user.uid}`,
+          `${API_URL}/customer/profile/${user.uid}?email=${encodeURIComponent(
+            user.email,
+          )}`,
         );
 
         console.log("📦 Backend response:", response.data);

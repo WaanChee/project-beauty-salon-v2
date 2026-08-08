@@ -226,7 +226,11 @@ export default function AuthPage() {
 
       // Verify admin status
       try {
-        const response = await axios.get(`${API_URL}/admin/verify/${user.uid}`);
+        const response = await axios.get(
+          `${API_URL}/admin/verify/${user.uid}?email=${encodeURIComponent(
+            user.email,
+          )}`,
+        );
 
         if (!response.data.isAdmin) {
           setError("This account doesn't have admin privileges.");
