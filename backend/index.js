@@ -101,7 +101,7 @@ try {
 
   if (serviceAccount) {
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
+      credential: admin.cert(serviceAccount),
     });
     console.log("✅ Firebase Admin initialized successfully");
   } else {
@@ -1084,7 +1084,7 @@ app.listen(PORT, () => {
   console.log(`📖 Documentation available at: GET /`);
   console.log(
     `🔥 Firebase Authentication: ${
-      admin.apps.length > 0 ? "ENABLED" : "DISABLED"
+      admin.getApps().length > 0 ? "ENABLED" : "DISABLED"
     }`,
   );
   console.log("============================================");
