@@ -416,6 +416,49 @@ export default function CustomerAuthPage() {
           profileError.response?.status === 404
         ) {
           console.warn(
+            "⚠️ Customer profile missing by UID. Attempting fallback lookup by email.",
+          );
+
+          try {
+            const emailFallbackResponse = await axios.get(
+              `${API_URL}/customer/profile-by-email?email=${encodeURIComponent(
+                user.email,
+              )}&uid=${encodeURIComponent(user.uid)}`,
+            );
+
+            console.log(
+              "✅ Fallback customer profile found by email:",
+              emailFallbackResponse.data,
+            );
+
+            const fallbackProfile = emailFallbackResponse.data;
+            const userProfile = {
+              uid: user.uid,
+              id: fallbackProfile.id,
+              name: fallbackProfile.name,
+              email: fallbackProfile.email,
+              phone_number: fallbackProfile.phone_number,
+            };
+
+            localStorage.setItem("customerToken", idToken);
+            localStorage.setItem("customerUser", JSON.stringify(userProfile));
+            setCustomerUser(userProfile);
+            setSuccessMessage(
+              "✅ Customer profile found by email. Redirecting to your dashboard...",
+            );
+            navigate("/customer/dashboard", { replace: true });
+            return;
+          } catch (emailFallbackError) {
+            console.warn(
+              "⚠️ Email fallback failed for customer profile:",
+              emailFallbackError.response?.status,
+              emailFallbackError.response?.data,
+            );
+
+            // Continue below to attempt auto-create if no existing profile was found.
+          }
+
+          console.warn(
             "⚠️ Customer profile missing. Attempting auto-creation from Firebase user data.",
           );
 

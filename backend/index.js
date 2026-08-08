@@ -531,6 +531,49 @@ app.get("/customer/profile/:uid", async (req, res) => {
   }
 });
 
+// Get customer profile by email as a fallback when firebase_uid is missing or mismatched
+app.get("/customer/profile-by-email", async (req, res) => {
+  try {
+    const { email, uid } = req.query;
+    if (!email) {
+      return res.status(400).json({ error: "Missing email query parameter" });
+    }
+
+    const result = await pool.query(
+      "SELECT id, firebase_uid, name, email, phone_number, created_at FROM users WHERE LOWER(email) = LOWER($1)",
+      [email],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: "Customer profile not found by email",
+      });
+    }
+
+    const profile = result.rows[0];
+
+    if (uid && (!profile.firebase_uid || profile.firebase_uid.trim() === "")) {
+      const updateResult = await pool.query(
+        "UPDATE users SET firebase_uid = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, firebase_uid, name, email, phone_number, created_at",
+        [uid, profile.id],
+      );
+      const updatedProfile = updateResult.rows[0];
+      console.log(
+        `✅ Updated missing firebase_uid for user ${updatedProfile.email} to ${uid}`,
+      );
+      return res.json(updatedProfile);
+    }
+
+    res.json(profile);
+  } catch (error) {
+    console.error("Get customer profile by email error:", error.message);
+    res.status(500).json({
+      error: "Failed to fetch customer profile by email",
+      details: error.message,
+    });
+  }
+});
+
 // Update customer profile
 app.put("/customer/profile/:uid", async (req, res) => {
   try {
