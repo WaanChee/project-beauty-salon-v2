@@ -25,7 +25,8 @@ import { resetCustomerState } from "./features/customers/customerSlice";
 function Layout() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  // Normalize any plain-string localStorage entries so useLocalStorage can parse
+  // Normalize any plain-string localStorage entries
+  // so useLocalStorage can parse (Basically convert from plain text to JSON)
   const normalizeStoredValue = (key, fallback) => {
     const raw = localStorage.getItem(key);
     if (!raw) return fallback;
