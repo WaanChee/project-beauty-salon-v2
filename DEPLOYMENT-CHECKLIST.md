@@ -84,6 +84,7 @@ Backend URL: https://your-project.replit.dev
   - [ ] `VITE_STORAGE_BUCKET`
   - [ ] `VITE_MESSAGING_SENDER_ID`
   - [ ] `VITE_APP_ID`
+  - [ ] `VITE_GOOGLE_MAPS_API_KEY`
 - [ ] Deploy
 - [ ] Verify frontend is accessible
 - [ ] Copy Vercel URL

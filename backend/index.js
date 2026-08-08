@@ -24,14 +24,14 @@ const PORT = process.env.PORT || 3000;
 const { DATABASE_URL, SECRET_KEY } = process.env;
 
 // Security middleware
-app.set("trust proxy", 1); // 🔥 Trust first proxy (Replit)
+app.set("trust proxy", 1); // 🔥 Trust first proxy
 app.use(helmet()); // Security headers
 
 // ============================================================================
 // FIREBASE ADMIN INITIALIZATION
 // ============================================================================
 try {
-  // Option 1: Use service account from environment variable (RECOMMENDED for Replit)
+  // Option 1: Use service account from environment variable
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
     admin.initializeApp({
@@ -140,6 +140,7 @@ const pool = new Pool({
   connectionString: DATABASE_URL,
   ssl: {
     require: false,
+    rejectUnauthorized: false,
   },
 });
 
@@ -1008,9 +1009,7 @@ app.listen(PORT, () => {
   console.log("🚀 Beauty Salon API Server - Firebase Edition");
   console.log("============================================");
   console.log(`📍 Server running on port ${PORT}`);
-  console.log(
-    `🌐 API URL: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`,
-  );
+  console.log(`🌐 API is Live!`);
   console.log(`📖 Documentation available at: GET /`);
   console.log(
     `🔥 Firebase Authentication: ${

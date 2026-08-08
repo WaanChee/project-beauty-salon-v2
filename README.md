@@ -33,7 +33,7 @@
 
 ```
 project-beauty-salon-v2/
-├── backend/                      # Express API Server
+├── backend/                     # Express API Server
 │   ├── index.js                 # Main server file
 │   ├── package.json             # Dependencies
 │   ├── .env.template            # Environment variables
