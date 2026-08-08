@@ -120,17 +120,20 @@ try {
 app.use(helmet()); // Security headers
 
 // CORS Configuration - Allow frontend from deployment-specific origins.
-const parsedFrontendUrls = (FRONTEND_URL || "https://your-app.vercel.app")
+const parsedFrontendUrls = (FRONTEND_URL || "")
   .split(",")
   .map((url) => url.trim())
   .filter(Boolean);
 
-const allowedOrigins = [
-  ...parsedFrontendUrls,
+const defaultOrigins = [
   "http://localhost:5173", // Vite dev server
   "http://localhost:3000", // Alternative local port
   "http://127.0.0.1:5173",
 ];
+
+const allowedOrigins = [...parsedFrontendUrls, ...defaultOrigins];
+
+const vercelOriginRegex = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
 
 console.log("============================================");
 console.log(
@@ -138,6 +141,7 @@ console.log(
   FRONTEND_URL || "<not set>",
 );
 console.log("🌐 Allowed CORS origins:", allowedOrigins);
+console.log("🚀 Vercel origins allowed by pattern:", vercelOriginRegex);
 console.log("============================================");
 
 app.use(
@@ -147,11 +151,16 @@ app.use(
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        console.warn(`❌ CORS blocked origin: ${origin}`);
-        callback(new Error("Not allowed by CORS"));
+        return callback(null, true);
       }
+
+      if (vercelOriginRegex.test(origin)) {
+        console.log(`✅ CORS allowed origin via Vercel pattern: ${origin}`);
+        return callback(null, true);
+      }
+
+      console.warn(`❌ CORS blocked origin: ${origin}`);
+      callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -676,12 +685,10 @@ app.get("/admin/verify-by-email", async (req, res) => {
     });
   } catch (error) {
     console.error("Verify admin by email error:", error.message);
-    res
-      .status(500)
-      .json({
-        error: "Failed to verify admin status by email",
-        details: error.message,
-      });
+    res.status(500).json({
+      error: "Failed to verify admin status by email",
+      details: error.message,
+    });
   }
 });
 
