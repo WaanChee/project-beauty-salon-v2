@@ -650,6 +650,41 @@ app.get("/admin/verify/:uid", async (req, res) => {
   }
 });
 
+// Verify admin by email (fallback) - safe read-only lookup
+app.get("/admin/verify-by-email", async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) {
+      return res.status(400).json({ error: "Missing email query parameter" });
+    }
+
+    const result = await pool.query(
+      "SELECT id, firebase_uid, username, email, created_at FROM admins WHERE LOWER(email) = LOWER($1)",
+      [email],
+    );
+
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ isAdmin: false, error: "Admin profile not found" });
+    }
+
+    res.json({
+      isAdmin: true,
+      username: result.rows[0].username,
+      admin: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Verify admin by email error:", error.message);
+    res
+      .status(500)
+      .json({
+        error: "Failed to verify admin status by email",
+        details: error.message,
+      });
+  }
+});
+
 // ============================================================================
 // BOOKINGS - ADMIN OPERATIONS
 // ============================================================================

@@ -273,10 +273,48 @@ export default function AuthPage() {
           return;
         }
 
-        setError("Could not verify admin status. Please try again.");
-        await auth.signOut();
-        setLoading(false);
-        return;
+        // Attempt fallback: verify by email if UID lookup failed or other network issue
+        try {
+          console.log(
+            "Attempting admin verify-by-email fallback for",
+            user.email,
+          );
+          const emailResponse = await axios.get(
+            `${API_URL}/admin/verify-by-email?email=${encodeURIComponent(user.email)}`,
+          );
+
+          if (!emailResponse.data.isAdmin) {
+            setError(
+              "This account doesn't have admin privileges. Please use a customer login.",
+            );
+            await auth.signOut();
+            setLoading(false);
+            return;
+          }
+
+          const adminData = {
+            uid: user.uid,
+            email: user.email,
+            username: emailResponse.data.username,
+          };
+
+          localStorage.setItem("adminToken", idToken);
+          localStorage.setItem("adminUser", JSON.stringify(adminData));
+          setAdminUser(adminData);
+          window.dispatchEvent(new CustomEvent("adminStatusChanged"));
+          setSuccessMessage("✅ Welcome back, Admin!");
+          navigate("/adminPage");
+          return;
+        } catch (fallbackError) {
+          console.error(
+            "Admin verify-by-email fallback failed:",
+            fallbackError,
+          );
+          setError("Could not verify admin status. Please try again.");
+          await auth.signOut();
+          setLoading(false);
+          return;
+        }
       }
     } catch (error) {
       console.error("❌ Login error:", error);
