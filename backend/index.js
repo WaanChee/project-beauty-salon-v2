@@ -21,34 +21,92 @@ const admin = require("firebase-admin");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const { DATABASE_URL, SECRET_KEY } = process.env;
+const {
+  DATABASE_URL,
+  SECRET_KEY,
+  FRONTEND_URL,
+  FIREBASE_SERVICE_ACCOUNT,
+  FIREBASE_SERVICE_ACCOUNT_PATH,
+  FIREBASE_PRIVATE_KEY,
+  FIREBASE_CLIENT_EMAIL,
+  FIREBASE_PROJECT_ID,
+} = process.env;
 
 // Security middleware
 app.set("trust proxy", 1); // 🔥 Trust first proxy
 app.use(helmet()); // Security headers
 
+const parseJsonEnvValue = (rawValue) => {
+  if (!rawValue) return null;
+
+  const tryParse = (value) => {
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      return null;
+    }
+  };
+
+  let parsed = tryParse(rawValue);
+  if (parsed) return parsed;
+
+  // Sometimes the service account JSON is passed through an env var with escaped newline characters.
+  const decoded = rawValue.replace(/\\n/g, "\n");
+  parsed = tryParse(decoded);
+  if (parsed) return parsed;
+
+  try {
+    const base64 = Buffer.from(rawValue, "base64").toString("utf8");
+    parsed = tryParse(base64);
+    if (parsed) return parsed;
+  } catch (error) {
+    // Ignore base64 decode errors.
+  }
+
+  return null;
+};
+
+const createFirebaseServiceAccount = () => {
+  if (FIREBASE_SERVICE_ACCOUNT) {
+    const parsed = parseJsonEnvValue(FIREBASE_SERVICE_ACCOUNT);
+    if (parsed) {
+      return parsed;
+    }
+    throw new Error(
+      "Invalid FIREBASE_SERVICE_ACCOUNT value. Ensure the JSON is valid and newlines are escaped correctly.",
+    );
+  }
+
+  if (FIREBASE_SERVICE_ACCOUNT_PATH) {
+    return require(FIREBASE_SERVICE_ACCOUNT_PATH);
+  }
+
+  if (FIREBASE_PRIVATE_KEY && FIREBASE_CLIENT_EMAIL && FIREBASE_PROJECT_ID) {
+    return {
+      type: "service_account",
+      project_id: FIREBASE_PROJECT_ID,
+      private_key: FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      client_email: FIREBASE_CLIENT_EMAIL,
+    };
+  }
+
+  return null;
+};
+
 // ============================================================================
 // FIREBASE ADMIN INITIALIZATION
 // ============================================================================
 try {
-  // Option 1: Use service account from environment variable
-  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  const serviceAccount = createFirebaseServiceAccount();
+
+  if (serviceAccount) {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
     });
-    console.log("✅ Firebase Admin initialized from environment variable");
-  }
-  // Option 2: Use service account file (if you uploaded it)
-  else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
-    const serviceAccount = require(process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
-    console.log("✅ Firebase Admin initialized from file");
+    console.log("✅ Firebase Admin initialized successfully");
   } else {
     console.warn(
-      "⚠️ Firebase Admin not initialized - set FIREBASE_SERVICE_ACCOUNT env variable",
+      "⚠️ Firebase Admin not initialized - no service account environment variables found.",
     );
   }
 } catch (error) {
@@ -61,13 +119,26 @@ try {
 // ============================================================================
 app.use(helmet()); // Security headers
 
-// CORS Configuration - Allow frontend from Vercel
+// CORS Configuration - Allow frontend from deployment-specific origins.
+const parsedFrontendUrls = (FRONTEND_URL || "https://your-app.vercel.app")
+  .split(",")
+  .map((url) => url.trim())
+  .filter(Boolean);
+
 const allowedOrigins = [
-  process.env.FRONTEND_URL || "https://your-app.vercel.app",
+  ...parsedFrontendUrls,
   "http://localhost:5173", // Vite dev server
   "http://localhost:3000", // Alternative local port
   "http://127.0.0.1:5173",
 ];
+
+console.log("============================================");
+console.log(
+  "🔧 Render deployment check: FRONTEND_URL =",
+  FRONTEND_URL || "<not set>",
+);
+console.log("🌐 Allowed CORS origins:", allowedOrigins);
+console.log("============================================");
 
 app.use(
   cors({

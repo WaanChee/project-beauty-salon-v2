@@ -27,6 +27,73 @@ This backend uses a **hybrid architecture** combining the strengths of different
 
 ---
 
+## 🚀 Deployment to Render
+
+### **Step 1: Prepare Your Backend Repository**
+
+1. **Create a new GitHub repository** called `beauty-salon-backend`
+2. Add these files to the repo:
+   - `index.js`
+   - `package.json`
+   - `README.md`
+   - `.env.template`
+   - `.gitignore`
+   - `render.yaml` (optional, for Render service configuration)
+3. Commit and push to GitHub.
+
+---
+
+### **Step 2: Configure Render**
+
+1. Go to [Render](https://render.com) and sign in.
+2. Click **New** → **Web Service**.
+3. Choose **Connect a repository** and pick your backend repo.
+4. Use these settings:
+   - **Root Directory:** `backend`
+   - **Build Command:** `npm install`
+   - **Start Command:** `npm start`
+   - **Environment:** `Node 18`
+
+---
+
+### **Step 3: Add Render Environment Variables**
+
+Add the following env vars in Render:
+
+- `DATABASE_URL`
+- `SECRET_KEY`
+- `FIREBASE_SERVICE_ACCOUNT` or the split values:
+  - `FIREBASE_PRIVATE_KEY`
+  - `FIREBASE_CLIENT_EMAIL`
+  - `FIREBASE_PROJECT_ID`
+- `FRONTEND_URL`
+
+If your frontend uses multiple domains, set `FRONTEND_URL` as comma-separated values.
+
+---
+
+### **Step 4: Deploy**
+
+1. Click **Create Web Service**.
+2. Render will build and deploy your backend.
+3. Check the logs for startup messages.
+
+---
+
+### **Step 5: Update your frontend**
+
+In your frontend deployment (Vercel or Render), set `VITE_API_URL` to your Render backend URL.
+
+---
+
+### **Step 6: Test**
+
+1. Open your frontend URL.
+2. Test login and customer/admin flow.
+3. If CORS blocks your frontend, add the exact frontend origin to `FRONTEND_URL` in Render.
+
+---
+
 ## 🚀 Deployment to Replit
 
 ### **Step 1: Prepare Your Backend Repository**
@@ -245,3 +312,6 @@ After deploying backend:
 ---
 
 **Made with ❤️ for Beauty Salon Management**
+
+When running backend locally, kindly type "cd backend" to change directory to backend
+and then type "npm start"

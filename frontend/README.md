@@ -44,10 +44,10 @@ In your Vercel project dashboard:
 
 ```
 Key: VITE_API_URL
-Value: https://your-repl-name.replit.dev
+Value: https://your-backend-service.onrender.com
 ```
 
-_Use your Replit backend URL from Step 1_
+_Use your Render backend URL from Step 1_
 
 #### **Firebase Configuration**
 
@@ -79,15 +79,16 @@ Value: 1:123456789012:web:abcdef123456
 
 ### **Step 4: Update Backend CORS**
 
-Go back to your **Replit backend**:
+Go back to your **Render backend**:
 
-1. Open **Secrets** (🔒 lock icon)
-2. Update `FRONTEND_URL`:
+1. Open your Render service dashboard
+2. Add or update `FRONTEND_URL` in Environment Variables:
    ```
    Key: FRONTEND_URL
    Value: https://your-app.vercel.app
    ```
-3. **Stop** and **Restart** the backend (click Run again)
+3. If you use multiple frontend domains, separate them with commas.
+4. Redeploy the backend service to apply the changes.
 
 ---
 
