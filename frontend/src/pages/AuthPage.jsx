@@ -207,6 +207,8 @@ export default function AuthPage() {
 
     setLoading(true);
 
+    console.log("🔗 Using API_URL:", API_URL);
+
     try {
       console.log("🔐 Admin login...");
 
@@ -266,16 +268,7 @@ export default function AuthPage() {
         navigate("/adminPage");
       } catch (verifyError) {
         console.error("Verification error:", verifyError);
-
-        // 404 means user is not in admins table (likely a customer account)
-        if (verifyError.response?.status === 404) {
-          setError(
-            "This account doesn't have admin privileges. Please use a customer login.",
-          );
-          await auth.signOut();
-          setLoading(false);
-          return;
-        }
+        console.log("🔗 Using API_URL:", API_URL);
 
         // Attempt fallback: verify by email if UID lookup failed or other network issue
         try {
@@ -314,7 +307,9 @@ export default function AuthPage() {
             "Admin verify-by-email fallback failed:",
             fallbackError,
           );
-          setError("Could not verify admin status. Please try again.");
+          setError(
+            "This account doesn't have admin privileges or the API URL is incorrect.",
+          );
           await auth.signOut();
           setLoading(false);
           return;

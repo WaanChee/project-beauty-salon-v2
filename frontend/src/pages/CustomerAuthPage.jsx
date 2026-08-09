@@ -178,6 +178,7 @@ export default function CustomerAuthPage() {
 
     setLoading(true);
 
+    console.log("🔗 Using API_URL:", API_URL);
     try {
       console.log("🔵 Creating Firebase account...");
 
@@ -330,6 +331,7 @@ export default function CustomerAuthPage() {
 
     setLoading(true);
 
+    console.log("🔗 Using API_URL:", API_URL);
     try {
       console.log("🔵 Logging in with Firebase...");
 

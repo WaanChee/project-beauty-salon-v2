@@ -9,7 +9,8 @@ const API_URL = import.meta.env.VITE_API_URL || defaultApiUrl;
 if (!import.meta.env.VITE_API_URL) {
   const message =
     "[VITE_API_URL not set] Using fallback http://localhost:3000. " +
-    "In production, this will fail unless VITE_API_URL is configured with your backend URL.";
+    "In production, this will fail unless VITE_API_URL is configured with your backend URL. " +
+    "DO NOT set it to your Vercel frontend URL.";
 
   if (import.meta.env.PROD) {
     console.error(message);
