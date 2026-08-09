@@ -422,9 +422,15 @@ app.get("/", (req, res) => {
       auth: {
         "POST /customer/create-profile": "Create customer profile",
         "GET /customer/profile/:uid": "Get customer profile",
+        "GET /customer/profile/:uid?email=...":
+          "Get customer profile by UID or fallback by email",
+        "GET /customer/profile-by-email": "Get customer profile by email",
         "PUT /customer/profile/:uid": "Update customer profile",
         "POST /admin/create-profile": "Create admin profile",
         "GET /admin/verify/:uid": "Verify admin status",
+        "GET /admin/verify/:uid?email=...":
+          "Verify admin by UID or fallback by email",
+        "GET /admin/verify-by-email": "Verify admin by email",
       },
       bookings: {
         "GET /bookings": "Get all bookings (admin)",
@@ -511,6 +517,10 @@ app.get("/customer/profile/:uid", async (req, res) => {
     const { uid } = req.params;
     const { email } = req.query;
 
+    console.log(
+      `🔍 Customer profile request received for uid=${uid}, email=${email}`,
+    );
+
     const result = await pool.query(
       "SELECT id, firebase_uid, name, email, phone_number, created_at FROM users WHERE firebase_uid = $1",
       [uid],
@@ -564,6 +574,9 @@ app.get("/customer/profile/:uid", async (req, res) => {
 app.get("/customer/profile-by-email", async (req, res) => {
   try {
     const { email, uid } = req.query;
+    console.log(
+      `🔍 Customer profile-by-email lookup for email=${email}, uid=${uid}`,
+    );
     if (!email) {
       return res.status(400).json({ error: "Missing email query parameter" });
     }
@@ -774,6 +787,7 @@ app.get("/admin/verify/:uid", async (req, res) => {
 app.get("/admin/verify-by-email", async (req, res) => {
   try {
     const { email } = req.query;
+    console.log(`🔍 Admin verify-by-email lookup for email=${email}`);
     if (!email) {
       return res.status(400).json({ error: "Missing email query parameter" });
     }

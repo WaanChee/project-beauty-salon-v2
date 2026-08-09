@@ -351,9 +351,8 @@ export default function CustomerAuthPage() {
         console.log(`🔍 Fetching profile for UID: ${user.uid}`);
 
         const response = await axios.get(
-          `${API_URL}/customer/profile/${user.uid}?email=${encodeURIComponent(
-            user.email,
-          )}`,
+          `${API_URL}/customer/profile/${user.uid}`,
+          { params: { email: user.email } },
         );
 
         console.log("📦 Backend response:", response.data);
@@ -423,9 +422,9 @@ export default function CustomerAuthPage() {
 
           try {
             const emailFallbackResponse = await axios.get(
-              `${API_URL}/customer/profile/${user.uid}?email=${encodeURIComponent(
+              `${API_URL}/customer/profile-by-email?email=${encodeURIComponent(
                 user.email,
-              )}`,
+              )}&uid=${encodeURIComponent(user.uid)}`,
             );
 
             console.log(
