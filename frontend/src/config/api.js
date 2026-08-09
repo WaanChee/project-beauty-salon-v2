@@ -4,9 +4,11 @@
 // ============================================================================
 
 const defaultApiUrl = "http://localhost:3000";
-const API_URL = import.meta.env.VITE_API_URL || defaultApiUrl;
+const rawApiUrl = import.meta.env.VITE_API_URL?.trim();
+const normalizedApiUrl = rawApiUrl ? rawApiUrl.replace(/\/+$/g, "") : null;
+const API_URL = normalizedApiUrl || defaultApiUrl;
 
-if (!import.meta.env.VITE_API_URL) {
+if (!normalizedApiUrl) {
   const message =
     "[VITE_API_URL not set] Using fallback http://localhost:3000. " +
     "In production, this will fail unless VITE_API_URL is configured with your backend URL. " +
